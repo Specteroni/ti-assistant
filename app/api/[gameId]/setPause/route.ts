@@ -1,9 +1,14 @@
-import { FieldValue, getFirestore } from "firebase-admin/firestore";
+import { FieldValue } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
 import {
   canEditGame,
   getTimersInTransaction,
 } from "../../../../server/util/fetch";
+import {
+  getLocalTimers,
+  saveLocalTimers,
+  useLocalFileDb,
+} from "../../../../server/util/localStore";
 import { getFirestoreAdmin } from "../../../../src/util/server";
 
 interface SetPauseData {
@@ -22,6 +27,19 @@ export async function POST(
     });
   }
 
+  const data = (await req.json()) as SetPauseData;
+
+  if (useLocalFileDb()) {
+    const timers = await getLocalTimers(gameId, "timers");
+    if (data.paused === undefined) {
+      delete timers.paused;
+    } else {
+      timers.paused = data.paused;
+    }
+    await saveLocalTimers(gameId, timers);
+    return NextResponse.json({});
+  }
+
   const db = await getFirestoreAdmin();
 
   const timerRef = db.collection("timers").doc(gameId);
@@ -30,8 +48,6 @@ export async function POST(
     await db.runTransaction(async (t) => {
       // Ensure that game exists.
       await getTimersInTransaction(timerRef, t);
-
-      const data = (await req.json()) as SetPauseData;
 
       t.update(timerRef, {
         paused: data.paused ?? FieldValue.delete(),

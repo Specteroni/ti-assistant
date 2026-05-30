@@ -24,6 +24,10 @@ export default function DBListener({
   const databaseFns = use(DatabaseFnsContext);
 
   useEffect(() => {
+    if (process.env.NEXT_PUBLIC_TI_LOCAL_FILE_DB === "1") {
+      return;
+    }
+
     const db = DBConnection.get();
 
     const unlistenFns: Unsubscribe[] = [];

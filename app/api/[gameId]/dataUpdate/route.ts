@@ -13,8 +13,17 @@ import {
   getGameDataInTransaction,
   getTimersInTransaction,
 } from "../../../../server/util/fetch";
+import {
+  getLocalGameData,
+  getLocalTimers,
+  saveLocalGame,
+  useLocalFileDb,
+} from "../../../../server/util/localStore";
 import { TURN_BOUNDARIES } from "../../../../src/util/api/actionLog";
+import { getHandler } from "../../../../src/util/api/gameLog";
+import { updateGameData as applyLocalGameUpdates } from "../../../../src/util/api/handler";
 import { getOppositeHandler } from "../../../../src/util/api/opposite";
+import { updateActionLog as updateLocalActionLog } from "../../../../src/util/api/update";
 import {
   AddAttachmentHandler,
   RemoveAttachmentHandler,
@@ -150,6 +159,7 @@ import { PassHandler, UnpassHandler } from "../../../../src/util/model/unpass";
 import { UpdateBreakthroughStateHandler } from "../../../../src/util/model/updateBreakthroughState";
 import { UpdateLeaderStateHandler } from "../../../../src/util/model/updateLeaderState";
 import { UpdatePlanetStateHandler } from "../../../../src/util/model/updatePlanetState";
+import { UpdateTechStateHandler } from "../../../../src/util/model/updateTechState";
 import {
   UndoGenomeHandler,
   UseGenomeHandler,
@@ -162,12 +172,20 @@ export async function POST(
   { params }: { params: Promise<{ gameId: string }> },
 ) {
   const { gameId } = await params;
+  const data = (await req.json()) as GameUpdateData & {
+    timestamp: number;
+    gameTime: number;
+  };
 
   const canEdit = await canEditGame(gameId);
   if (!canEdit) {
     return new Response("Not authorized", {
       status: 403,
     });
+  }
+
+  if (useLocalFileDb()) {
+    return updateLocalFileGame(gameId, data);
   }
 
   const db = await getFirestoreAdmin();
@@ -185,11 +203,6 @@ export async function POST(
   const serverGameTime = timers.game ?? 0;
 
   const gameRef = db.collection("games").doc(gameId);
-
-  const data = (await req.json()) as GameUpdateData & {
-    timestamp: number;
-    gameTime: number;
-  };
 
   let gameTime = data.gameTime;
   // Use the later time, unless the passed in time is more than 20 seconds after the server time.
@@ -229,6 +242,50 @@ export async function POST(
   }
 
   // TODO: Consider returning something else.
+  return NextResponse.json({ success: true });
+}
+
+async function updateLocalFileGame(
+  gameId: string,
+  data: GameUpdateData & { timestamp: number; gameTime: number },
+) {
+  if (!data.action) {
+    return new Response("Missing info", {
+      status: 422,
+    });
+  }
+
+  const gameData = await getLocalGameData(gameId, "games");
+  const timers = await getLocalTimers(gameId, "timers");
+  gameData.timers = timers;
+
+  let handler: Optional<Handler>;
+  if (data.action === "UNDO") {
+    const actionToUndo = (gameData.actionLog ?? [])[0];
+    if (!actionToUndo) {
+      return NextResponse.json({ success: true });
+    }
+    handler = getOppositeHandler(gameData, actionToUndo.data);
+  } else {
+    handler = getHandler(gameData, data);
+  }
+
+  if (!handler) {
+    throw new Error(`Action ${data.action} not implemented`);
+  }
+
+  if (!handler.validate()) {
+    return NextResponse.json({ success: true });
+  }
+
+  applyLocalGameUpdates(gameData, handler.getUpdates());
+  updateLocalActionLog(gameData, handler, data.timestamp, data.gameTime);
+
+  if (gameData.timers) {
+    gameData.timers.paused = false;
+  }
+
+  await saveLocalGame(gameId, gameData, gameData.timers ?? {});
   return NextResponse.json({ success: true });
 }
 
@@ -420,6 +477,7 @@ function updateInTransaction(
       case "ADVANCE_PHASE": {
         // Set values for ability to Undo
         data.event.factions = gameData.factions;
+        data.event.planets = gameData.planets;
         data.event.state = gameData.state;
         data.event.strategycards = gameData.strategycards ?? {};
         handler = new AdvancePhaseHandler(gameData, data);
@@ -598,6 +656,10 @@ function updateInTransaction(
       }
       case "UPDATE_PLANET_STATE": {
         handler = new UpdatePlanetStateHandler(gameData, data);
+        break;
+      }
+      case "UPDATE_TECH_STATE": {
+        handler = new UpdateTechStateHandler(gameData, data);
         break;
       }
       case "SELECT_FACTION": {

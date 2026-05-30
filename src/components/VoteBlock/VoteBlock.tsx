@@ -88,6 +88,8 @@ function hasCouncilPreserve(
   for (const planet of Object.values(planets)) {
     if (
       planet.owner === factionId &&
+      planet.state !== "EXHAUSTED" &&
+      planet.state !== "PURGED" &&
       planet.attachments?.includes("Council Preserve")
     ) {
       return true;
@@ -384,6 +386,9 @@ export function computeRemainingVotes(
   const updatedPlanets = applyAllPlanetAttachments(ownedPlanets, attachments);
 
   const filteredPlanets = updatedPlanets.filter((planet) => {
+    if (planet.state === "EXHAUSTED" || planet.state === "PURGED") {
+      return false;
+    }
     if (factionId !== state?.ancientBurialSites) {
       return true;
     }

@@ -94,6 +94,7 @@ import { PassHandler, UnpassHandler } from "../model/unpass";
 import { UpdateBreakthroughStateHandler } from "../model/updateBreakthroughState";
 import { UpdateLeaderStateHandler } from "../model/updateLeaderState";
 import { UpdatePlanetStateHandler } from "../model/updatePlanetState";
+import { UpdateTechStateHandler } from "../model/updateTechState";
 import { UndoGenomeHandler, UseGenomeHandler } from "../model/useGenome";
 import { getOppositeHandler } from "./opposite";
 
@@ -225,6 +226,8 @@ export function getHandler(gameData: StoredGameData, data: GameUpdateData) {
       return new UpdateLeaderStateHandler(gameData, data);
     case "UPDATE_PLANET_STATE":
       return new UpdatePlanetStateHandler(gameData, data);
+    case "UPDATE_TECH_STATE":
+      return new UpdateTechStateHandler(gameData, data);
     case "PLAY_ADJUDICATOR_BAAL":
       return new PlayAdjudicatorBaalHandler(gameData, data);
     case "SWAP_MAP_TILES":

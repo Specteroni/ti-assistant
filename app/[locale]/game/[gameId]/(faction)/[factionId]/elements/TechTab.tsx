@@ -99,6 +99,7 @@ export default function TechTab({ factionId }: { factionId: FactionId }) {
           return (
             <TechRow
               key={techId}
+              factionId={factionId}
               techId={techId}
               removeTech={(techId) =>
                 dataUpdate(Events.RemoveTechEvent(factionId, techId))

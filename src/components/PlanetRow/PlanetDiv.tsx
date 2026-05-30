@@ -1,6 +1,10 @@
-import { CSSProperties, use } from "react";
+import { CSSProperties, KeyboardEvent, MouseEvent, use } from "react";
 import { ModalContext } from "../../context/contexts";
-import { useAttachments, useOptions } from "../../context/dataHooks";
+import {
+  useAttachments,
+  useOptions,
+  useViewOnly,
+} from "../../context/dataHooks";
 import { SymbolX } from "../../icons/svgs";
 import FlipSVG from "../../icons/ui/Flip";
 import { useDataUpdate } from "../../util/api/dataUpdate";
@@ -13,7 +17,12 @@ import PlanetIcon from "../PlanetIcon/PlanetIcon";
 import ResourcesIcon from "../ResourcesIcon/ResourcesIcon";
 import UnitIcon from "../Units/Icons";
 import styles from "./PlanetDiv.module.scss";
-import { AttachMenu, getAttributeIcon } from "./PlanetRow";
+import {
+  AttachMenu,
+  canTogglePlanetExhaustion,
+  getAttributeIcon,
+  usePlanetExhaustion,
+} from "./PlanetRow";
 
 interface PlanetDivProperties extends CSSProperties {
   "--color": string;
@@ -33,6 +42,10 @@ function TypeOrFactionIcon({ planet }: { planet: Planet }) {
 }
 
 export default function PlanetDiv({ planet }: { planet: Planet }) {
+  const viewOnly = useViewOnly();
+  const planetExhaustion = usePlanetExhaustion(planet);
+  const canToggleExhaustion = !viewOnly && canTogglePlanetExhaustion(planet);
+
   let indexStart = 4;
 
   let leftAttribute = planet.attributes.reduce(
@@ -65,12 +78,54 @@ export default function PlanetDiv({ planet }: { planet: Planet }) {
     "--border-color": borderColor,
   };
 
+  function togglePlanetExhaustion() {
+    if (!canToggleExhaustion) {
+      return;
+    }
+    planetExhaustion.toggle();
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+    event.preventDefault();
+    togglePlanetExhaustion();
+  }
+
   return (
     <div
-      className={`${styles.PlanetDivWrapper} hiddenButtonParent`}
+      className={`${styles.PlanetDivWrapper} hiddenButtonParent ${
+        planetExhaustion.exhausted ? styles.ExhaustedWrapper : ""
+      }`}
       style={properties}
     >
-      <div className={styles.PlanetDiv}>
+      <div
+        className={`${styles.PlanetDiv} ${
+          canToggleExhaustion ? styles.ExhaustablePlanet : ""
+        } ${planetExhaustion.exhausted ? styles.ExhaustedPlanet : ""}`}
+        onClick={togglePlanetExhaustion}
+        onKeyDown={handleKeyDown}
+        role={canToggleExhaustion ? "button" : undefined}
+        tabIndex={canToggleExhaustion ? 0 : undefined}
+        aria-pressed={
+          canToggleExhaustion ? planetExhaustion.exhausted : undefined
+        }
+        aria-label={
+          canToggleExhaustion
+            ? planetExhaustion.exhausted
+              ? `Ready ${planet.name}`
+              : `Exhaust ${planet.name}`
+            : undefined
+        }
+        title={
+          canToggleExhaustion
+            ? planetExhaustion.exhausted
+              ? "Ready planet"
+              : "Exhaust planet"
+            : undefined
+        }
+      >
         <div
           style={{
             display: "flex",
@@ -142,12 +197,14 @@ export default function PlanetDiv({ planet }: { planet: Planet }) {
             </div>
           );
         })}
-        <ExhaustButton />
+        <ExhaustButton planet={planet} />
         <ChangeOwnerButton planet={planet} />
         <AttachButton planet={planet} />
       </div>
       <div
-        className={styles.BottomSection}
+        className={`${styles.BottomSection} ${
+          planetExhaustion.exhausted ? styles.ExhaustedBottomSection : ""
+        }`}
         style={{ minWidth: "100%", borderColor }}
       >
         {planet.name}
@@ -229,10 +286,18 @@ function StructureSection({ planet }: { planet: Planet }) {
   );
 }
 
-function ExhaustButton({ state }: { state?: PlanetState }) {
-  const options = useOptions();
+function ExhaustButton({ planet }: { planet: Planet }) {
+  const viewOnly = useViewOnly();
+  const { exhausted, toggle } = usePlanetExhaustion(planet);
 
-  if (options.hide?.includes("PLANET_STATE")) {
+  if (!planet.owner || planet.state === "PURGED") {
+    return null;
+  }
+  if (
+    planet.attributes.includes("ocean") ||
+    planet.attributes.includes("space-station") ||
+    planet.attributes.includes("synthetic")
+  ) {
     return null;
   }
 
@@ -246,8 +311,19 @@ function ExhaustButton({ state }: { state?: PlanetState }) {
 
   return (
     <button
-      className={`${styles.FloatingButton} hiddenButton`}
-      style={position}
+      className={`${styles.FloatingButton} ${exhausted ? "" : "hiddenButton"}`}
+      style={{
+        ...position,
+        backgroundColor: exhausted
+          ? "var(--selected-bg)"
+          : "var(--interactive-bg)",
+      }}
+      onClick={(event: MouseEvent<HTMLButtonElement>) => {
+        event.stopPropagation();
+        toggle();
+      }}
+      disabled={viewOnly}
+      title={exhausted ? "Ready planet" : "Exhaust planet"}
     >
       <FlipSVG />
     </button>
@@ -332,7 +408,10 @@ function AttachButton({ planet }: { planet: Planet }) {
     <button
       className={`${styles.FloatingButton} hiddenButton`}
       style={position}
-      onClick={() => openModal(<AttachMenu planetId={planet.id} />)}
+      onClick={(event: MouseEvent<HTMLButtonElement>) => {
+        event.stopPropagation();
+        openModal(<AttachMenu planetId={planet.id} />);
+      }}
     >
       ⎗
     </button>
@@ -359,11 +438,12 @@ function ChangeOwnerButton({ planet }: { planet: Planet }) {
     <button
       className={`${styles.FloatingButton} hiddenButton`}
       style={position}
-      onClick={() =>
+      onClick={(event: MouseEvent<HTMLButtonElement>) => {
+        event.stopPropagation();
         dataUpdate(
           Events.ClaimPlanetEvent(planet.owner as FactionId, planet.id),
-        )
-      }
+        );
+      }}
     >
       <SymbolX color="firebrick" />
     </button>

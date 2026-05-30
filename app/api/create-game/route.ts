@@ -4,6 +4,13 @@ import { getFactions } from "../../../server/data/factions";
 import { getPlanets } from "../../../server/data/planets";
 import { getSession, TIASession } from "../../../server/util/fetch";
 import {
+  localGameExists,
+  saveLocalGame,
+  setLocalGamePassword,
+  setLocalSession,
+  useLocalFileDb,
+} from "../../../server/util/localStore";
+import {
   getFirestoreAdmin,
   getIntl,
   getSessionIdFromCookie,
@@ -29,8 +36,6 @@ export async function POST(req: Request) {
   let speaker: number = json.speaker;
 
   let options: Options = json.options;
-
-  const db = await getFirestoreAdmin();
 
   const locale = "en";
   const intl = await getIntl(locale);
@@ -208,6 +213,40 @@ export async function POST(req: Request) {
   };
 
   let gameid = makeid(6);
+
+  if (useLocalFileDb()) {
+    while (
+      (await localGameExists(gameid, "games")) ||
+      (await localGameExists(gameid, "archive"))
+    ) {
+      gameid = makeid(6);
+    }
+
+    if (json.password) {
+      const hashedPassword = hashPassword(json.password);
+      await setLocalGamePassword(gameid, hashedPassword);
+
+      let sessionId = await getSessionIdFromCookie();
+      let session: Optional<TIASession>;
+      if (sessionId) {
+        session = await getSession(sessionId);
+      }
+      if (!sessionId || !session) {
+        sessionId = makeid(18);
+        setSessionIdCookie(sessionId);
+        session = {};
+      }
+      await setLocalSession(sessionId, {
+        ...session,
+        games: Array.from(new Set([...(session.games ?? []), gameid])),
+      });
+    }
+
+    await saveLocalGame(gameid, gameState, {});
+    return NextResponse.json({ gameid });
+  }
+
+  const db = await getFirestoreAdmin();
 
   let game = await db.collection("games").doc(gameid).get();
   let archive = await db.collection("archive").doc(gameid).get();

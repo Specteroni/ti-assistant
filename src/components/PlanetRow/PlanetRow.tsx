@@ -3,9 +3,13 @@ import { FormattedMessage } from "react-intl";
 import { ModalContext } from "../../context/contexts";
 import {
   useAttachments,
+  useCurrentTurn,
+  useLeader,
+  useOptions,
   usePlanet,
   useViewOnly,
 } from "../../context/dataHooks";
+import { usePhase } from "../../context/stateDataHooks";
 import { useAllFactionColors } from "../../context/factionDataHooks";
 import { useFactionsWithTech } from "../../context/techDataHooks";
 import ArcaneCitadelSVG from "../../icons/attachments/ArcaneCitadel";
@@ -14,7 +18,9 @@ import DemilitarizedZoneSVG from "../../icons/attachments/DemilitarizedZone";
 import OrbitalFoundriesSVG from "../../icons/attachments/OrbitalFoundries";
 import TombOfEmphidiaSVG from "../../icons/attachments/TombOfEmphidia";
 import HitSVG from "../../icons/ui/Hit";
+import FlipSVG from "../../icons/ui/Flip";
 import { SelectableRow } from "../../SelectableRow";
+import { getFactionVotes } from "../../util/actionLog";
 import { useDataUpdate } from "../../util/api/dataUpdate";
 import { Events } from "../../util/api/events";
 import { applyPlanetAttachments } from "../../util/planets";
@@ -44,6 +50,72 @@ interface PlanetRowProps {
   prevOwner?: FactionId;
 }
 
+export function usePlanetExhaustion(planet: Planet) {
+  const currentTurn = useCurrentTurn();
+  const dataUpdate = useDataUpdate();
+  const options = useOptions();
+  const phase = usePhase();
+  const xxekirGrom = useLeader("Xxekir Grom");
+
+  const exhausted = planet.state === "EXHAUSTED";
+
+  function getPlanetVotes() {
+    let planetVotes = planet.influence;
+    if (
+      planet.owner === "Xxcha Kingdom" &&
+      options.expansions.includes("CODEX THREE") &&
+      xxekirGrom?.state === "readied"
+    ) {
+      planetVotes += planet.resources;
+    }
+    return planetVotes;
+  }
+
+  async function toggle() {
+    const nextState = exhausted ? "READIED" : "EXHAUSTED";
+    await dataUpdate(Events.UpdatePlanetStateEvent(planet.id, nextState));
+
+    if (nextState !== "EXHAUSTED" || phase !== "AGENDA" || !planet.owner) {
+      return;
+    }
+
+    const factionVotes = getFactionVotes(currentTurn, planet.owner);
+    if (!factionVotes?.target || factionVotes.target === "Abstain") {
+      return;
+    }
+
+    const planetVotes = getPlanetVotes();
+    if (planetVotes <= 0) {
+      return;
+    }
+
+    await dataUpdate(
+      Events.CastVotesEvent(
+        planet.owner,
+        factionVotes.votes + planetVotes,
+        factionVotes.extraVotes,
+        factionVotes.target,
+      ),
+    );
+  }
+
+  return {
+    exhausted,
+    toggle,
+  };
+}
+
+export function canTogglePlanetExhaustion(planet: Planet) {
+  if (!planet.owner || planet.state === "PURGED") {
+    return false;
+  }
+  return (
+    !planet.attributes.includes("ocean") &&
+    !planet.attributes.includes("space-station") &&
+    !planet.attributes.includes("synthetic")
+  );
+}
+
 export default function PlanetRow({
   planet,
   factionId,
@@ -57,6 +129,7 @@ export default function PlanetRow({
   const dataUpdate = useDataUpdate();
   const factionColors = useAllFactionColors();
   const viewOnly = useViewOnly();
+  const planetExhaustion = usePlanetExhaustion(planet);
 
   const { openModal } = use(ModalContext);
 
@@ -145,6 +218,10 @@ export default function PlanetRow({
     return factionsWithBastionSpaceDock.has(planet.owner);
   }
 
+  function showPlanetStateToggle() {
+    return canTogglePlanetExhaustion(planet);
+  }
+
   return (
     <SelectableRow
       itemId={planet.id}
@@ -162,6 +239,8 @@ export default function PlanetRow({
           justifyContent: "space-between",
           paddingTop: rem(4),
           boxSizing: "border-box",
+          opacity: planetExhaustion.exhausted ? 0.5 : undefined,
+          filter: planetExhaustion.exhausted ? "grayscale(1)" : undefined,
           // opacity: isDragging ? 0.25 : undefined,
         }}
       >
@@ -232,6 +311,16 @@ export default function PlanetRow({
             disabled={viewOnly}
           >
             <UnitIcon type="Space Dock" size={14} />
+          </Toggle>
+        ) : null}
+        {showPlanetStateToggle() ? (
+          <Toggle
+            selected={planetExhaustion.exhausted}
+            toggleFn={planetExhaustion.toggle}
+            disabled={viewOnly}
+            style={{ marginLeft: rem(2) }}
+          >
+            <FlipSVG />
           </Toggle>
         ) : null}
         {!opts.showAttachButton ? (

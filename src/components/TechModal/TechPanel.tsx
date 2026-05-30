@@ -677,6 +677,7 @@ function TechList({ factionId }: { factionId: FactionId }) {
             return (
               <TechRow
                 key={tech.id}
+                factionId={factionId}
                 techId={tech.id}
                 removeTech={
                   viewOnly

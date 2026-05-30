@@ -7,8 +7,16 @@ import { UpdateBreakthroughStateHandler } from "./updateBreakthroughState";
 export class ClaimPlanetHandler implements Handler {
   constructor(public gameData: StoredGameData, public data: ClaimPlanetData) {
     const planet = gameData.planets[data.event.planet];
-    if (planet && planet.owner) {
+    if (planet && planet.owner && !this.data.event.prevOwner) {
       this.data.event.prevOwner = planet.owner;
+    }
+    if (this.data.event.prevState) {
+      return;
+    }
+    if (planet && planet.state) {
+      this.data.event.prevState = planet.state;
+    } else {
+      this.data.event.prevState = "READIED";
     }
   }
 
@@ -44,6 +52,10 @@ export class ClaimPlanetHandler implements Handler {
       [`state.paused`]: false,
       [`sequenceNum`]: "INCREMENT",
       [`planets.${this.data.event.planet}.owner`]: this.data.event.faction,
+      [`planets.${this.data.event.planet}.state`]:
+        this.data.event.restoreState || this.data.event.prevOwner
+          ? this.data.event.prevState ?? "READIED"
+          : "EXHAUSTED",
       [`planets.${this.data.event.planet}.spaceDock`]: "DELETE",
     };
 
@@ -120,7 +132,12 @@ export class UnclaimPlanetHandler implements Handler {
   constructor(
     public gameData: StoredGameData,
     public data: UnclaimPlanetData
-  ) {}
+  ) {
+    const planet = gameData.planets[data.event.planet];
+    if (planet && planet.state && !this.data.event.prevState) {
+      this.data.event.prevState = planet.state;
+    }
+  }
 
   validate(): boolean {
     const cache = createIntlCache();
@@ -138,12 +155,15 @@ export class UnclaimPlanetHandler implements Handler {
     // TODO: Figure out if [0.0.0] works.
 
     let prevOwner: Optional<string>;
+    let prevState: Optional<PlanetState> = this.data.event.prevState;
     let claimedThisTurn: boolean = false;
     const currentTurn = getCurrentTurnLogEntries(this.gameData.actionLog ?? []);
     for (const entry of currentTurn) {
       const action = this.getActionLogAction(entry);
       if (action === "DELETE") {
-        prevOwner = (entry.data as ClaimPlanetData).event.prevOwner;
+        const claimEvent = (entry.data as ClaimPlanetData).event;
+        prevOwner = claimEvent.prevOwner;
+        prevState = claimEvent.prevState;
         claimedThisTurn = true;
       }
     }
@@ -152,6 +172,9 @@ export class UnclaimPlanetHandler implements Handler {
       [`state.paused`]: false,
       [`sequenceNum`]: "INCREMENT",
       [`planets.${this.data.event.planet}.owner`]: prevOwner ?? "DELETE",
+      [`planets.${this.data.event.planet}.state`]: prevOwner
+        ? prevState ?? "READIED"
+        : "DELETE",
       [`planets.${this.data.event.planet}.spaceDock`]: "DELETE",
     };
 

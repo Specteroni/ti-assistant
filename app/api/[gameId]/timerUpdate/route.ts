@@ -1,9 +1,13 @@
-import { getFirestore } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
 import {
   canEditGame,
   getTimersInTransaction,
 } from "../../../../server/util/fetch";
+import {
+  getLocalTimers,
+  saveLocalTimers,
+  useLocalFileDb,
+} from "../../../../server/util/localStore";
 import { getFirestoreAdmin } from "../../../../src/util/server";
 
 export async function POST(
@@ -20,6 +24,26 @@ export async function POST(
   }
 
   const data = (await req.json()) as TimerUpdateData;
+
+  if (useLocalFileDb()) {
+    if (!data.timestamp) {
+      return new Response("Missing info", {
+        status: 422,
+      });
+    }
+
+    const timers = await getLocalTimers(gameId, "timers");
+    if ((timers.game ?? 0) > (data.timers.game ?? 0)) {
+      return NextResponse.json(timers);
+    }
+
+    delete data.timers.paused;
+    await saveLocalTimers(gameId, {
+      ...timers,
+      ...data.timers,
+    });
+    return NextResponse.json({ success: true });
+  }
 
   const db = await getFirestoreAdmin();
 

@@ -1,4 +1,5 @@
 import { FormattedMessage } from "react-intl";
+import { KeyboardEvent, MouseEvent, use } from "react";
 import InfoModal from "./InfoModal";
 import { SelectableRow } from "./SelectableRow";
 import styles from "./TechRow.module.scss";
@@ -16,9 +17,8 @@ import { useDataUpdate } from "./util/api/dataUpdate";
 import { Events } from "./util/api/events";
 import { hasTech } from "./util/api/techs";
 import { getFactionBorder } from "./util/factions";
-import { getTechColor } from "./util/techs";
+import { canExhaustTech, getTechColor } from "./util/techs";
 import { em, objectEntries, rem } from "./util/util";
-import { use } from "react";
 import { ModalContext } from "./context/contexts";
 import { ModalContent } from "./components/Modal/Modal";
 
@@ -89,6 +89,7 @@ interface TechRowProps {
   onClick?: () => void;
   opts?: TechRowOptions;
   researchAgreement?: boolean;
+  factionId?: FactionId;
 }
 
 interface TechRowOptions {
@@ -104,14 +105,87 @@ export function TechRow({
   removeTech,
   addTech,
   researchAgreement,
+  factionId,
   onClick,
   opts = {},
 }: TechRowProps) {
   const tech = useTech(techId);
   const viewOnly = useViewOnly();
+  const dataUpdate = useDataUpdate();
+  const factions = useFactions();
   const { openModal } = use(ModalContext);
   if (!tech) {
     return null;
+  }
+
+  const factionTech = factionId ? factions[factionId]?.techs[techId] : undefined;
+  const techState = factionTech?.state ?? "ready";
+  const exhaustable =
+    !!factionId &&
+    !!factionTech &&
+    techState !== "purged" &&
+    canExhaustTech(tech) &&
+    !viewOnly;
+  const exhausted = techState === "exhausted";
+
+  function openInfoModal() {
+    openModal(
+      <ModalContent
+        title={
+          <div className="flexRow" style={{ fontSize: rem(40), gap: rem(20) }}>
+            {tech.name}
+            {tech.type === "UPGRADE" ? (
+              <UnitIcon type={tech.unitType} size={20} />
+            ) : null}
+            <TechPrereqDots prereqs={tech.prereqs} width={4} />
+          </div>
+        }
+      >
+        <div className={styles.infoContent}>
+          <InfoContent tech={tech} />
+        </div>
+      </ModalContent>,
+    );
+  }
+
+  function toggleTechExhaustion() {
+    if (!factionId) {
+      return;
+    }
+    dataUpdate(
+      Events.UpdateTechStateEvent(
+        factionId,
+        tech.id,
+        exhausted ? "ready" : "exhausted",
+      ),
+    );
+  }
+
+  function runTechAction() {
+    if (onClick) {
+      onClick();
+      return;
+    }
+    if (exhaustable) {
+      toggleTechExhaustion();
+      return;
+    }
+    openInfoModal();
+  }
+
+  function handleTechClick(event: MouseEvent<HTMLDivElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    runTechAction();
+  }
+
+  function handleTechKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    runTechAction();
   }
 
   return (
@@ -132,7 +206,8 @@ export function TechRow({
             flexDirection: "row",
             alignItems: "center",
             width: "100%",
-            opacity: opts.fade ? 0.25 : undefined,
+            opacity: opts.fade ? 0.25 : exhausted ? 0.5 : undefined,
+            filter: exhausted ? "grayscale(1)" : undefined,
           }}
         >
           <div
@@ -147,33 +222,24 @@ export function TechRow({
 
               cursor: "pointer",
             }}
-            onClick={
-              onClick
-                ? onClick
-                : (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    openModal(
-                      <ModalContent
-                        title={
-                          <div
-                            className="flexRow"
-                            style={{ fontSize: rem(40), gap: rem(20) }}
-                          >
-                            {tech.name}
-                            {tech.type === "UPGRADE" ? (
-                              <UnitIcon type={tech.unitType} size={20} />
-                            ) : null}
-                            <TechPrereqDots prereqs={tech.prereqs} width={4} />
-                          </div>
-                        }
-                      >
-                        <div className={styles.infoContent}>
-                          <InfoContent tech={tech} />
-                        </div>
-                      </ModalContent>,
-                    );
-                  }
+            onClick={handleTechClick}
+            onKeyDown={handleTechKeyDown}
+            role={exhaustable ? "button" : undefined}
+            tabIndex={exhaustable ? 0 : undefined}
+            aria-pressed={exhaustable ? exhausted : undefined}
+            aria-label={
+              exhaustable
+                ? exhausted
+                  ? `Ready ${tech.name}`
+                  : `Exhaust ${tech.name}`
+                : undefined
+            }
+            title={
+              exhaustable
+                ? exhausted
+                  ? `Ready ${tech.name}`
+                  : `Exhaust ${tech.name}`
+                : undefined
             }
           >
             {tech.name}
@@ -203,7 +269,7 @@ export function TechRow({
             ) : null}
             <TechPrereqDots prereqs={tech.prereqs} />
           </div>
-          {onClick ? (
+          {onClick || exhaustable ? (
             <InfoModal
               title={
                 <div

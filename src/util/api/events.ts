@@ -79,6 +79,7 @@ export const Events = {
   UpdateBreakthroughStateEvent,
   UpdateLeaderStateEvent,
   UpdatePlanetStateEvent,
+  UpdateTechStateEvent,
   UseGenomeEvent,
 } as const;
 
@@ -995,6 +996,21 @@ function UpdatePlanetStateEvent(
     action: "UPDATE_PLANET_STATE",
     event: {
       planet,
+      state,
+    },
+  };
+}
+
+function UpdateTechStateEvent(
+  faction: FactionId,
+  tech: TechId,
+  state: TechState,
+): UpdateTechStateData {
+  return {
+    action: "UPDATE_TECH_STATE",
+    event: {
+      faction,
+      tech,
       state,
     },
   };

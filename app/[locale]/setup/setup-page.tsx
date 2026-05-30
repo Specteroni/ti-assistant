@@ -1293,7 +1293,7 @@ const INITIAL_OPTIONS: SetupOptions = {
   "hide-objectives": false,
   "hide-planets": false,
   "hide-techs": false,
-  hide: new Set<AppSection>(["COMMAND_COUNTERS", "PLANET_STATE", "STRUCTURES"]),
+  hide: new Set<AppSection>(["COMMAND_COUNTERS", "STRUCTURES"]),
   "victory-points": 10,
   "secondary-victory-points": 10,
 };

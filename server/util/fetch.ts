@@ -16,6 +16,13 @@ import {
 } from "../../src/util/server";
 import { ActionLog, Optional } from "../../src/util/types/types";
 import { BASE_OPTIONS } from "../data/options";
+import {
+  getLocalGameData,
+  getLocalGamePassword,
+  getLocalSession,
+  getLocalTimers,
+  useLocalFileDb,
+} from "./localStore";
 
 type GamePath = "archive" | "games";
 
@@ -26,6 +33,10 @@ export async function getGameData(
   gameId: string,
   path: GamePath,
 ): Promise<StoredGameData> {
+  if (useLocalFileDb()) {
+    return getLocalGameData(gameId, path);
+  }
+
   const db = await getFirestoreAdmin();
 
   const gameRef = db.collection(path).doc(gameId);
@@ -129,6 +140,11 @@ export async function getCurrentTurnLogEntriesInTransaction(
 }
 
 export async function getFullActionLog(gameId: string, path: GamePath) {
+  if (useLocalFileDb()) {
+    const gameData = await getLocalGameData(gameId, path);
+    return gameData.actionLog ?? [];
+  }
+
   const db = await getFirestoreAdmin();
 
   const gameRef = db.collection("games").doc(gameId);
@@ -154,6 +170,10 @@ export async function getFullActionLog(gameId: string, path: GamePath) {
 type TimerPath = "timers" | "archiveTimers";
 
 export async function getTimers(gameId: string, path: TimerPath) {
+  if (useLocalFileDb()) {
+    return getLocalTimers(gameId, path);
+  }
+
   const db = await getFirestoreAdmin();
 
   const timersRef = db.collection(path).doc(gameId);
@@ -194,6 +214,10 @@ export interface TIASession {
 export async function getSession(
   sessionId: string,
 ): Promise<Optional<TIASession>> {
+  if (useLocalFileDb()) {
+    return getLocalSession(sessionId);
+  }
+
   const db = await getFirestoreAdmin();
 
   const sessionRef = db.collection("sessions").doc(sessionId);
@@ -212,6 +236,10 @@ export async function getSession(
 }
 
 export async function getGamePassword(gameId: string) {
+  if (useLocalFileDb()) {
+    return getLocalGamePassword(gameId);
+  }
+
   const db = await getFirestoreAdmin();
 
   const passwordRef = db.collection("passwords").doc(gameId);

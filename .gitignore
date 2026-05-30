@@ -5,6 +5,7 @@ build/*
 .next/*
 
 server/twilight-imperium-360307-*.json
+server/local-dev-db.json
 server/completed-games.json
 server/processed-logs.json
 

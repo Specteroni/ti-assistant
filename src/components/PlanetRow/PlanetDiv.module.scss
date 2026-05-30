@@ -12,6 +12,35 @@
   // isolation: isolate;
 }
 
+.ExhaustablePlanet {
+  cursor: pointer;
+  transition:
+    filter 160ms,
+    opacity 160ms,
+    box-shadow 160ms;
+}
+
+.ExhaustablePlanet:hover {
+  box-shadow: 0 0 0 0.125rem var(--interactive-bg);
+}
+
+.ExhaustablePlanet:focus-visible {
+  outline: 0.125rem solid var(--neutral-border);
+  outline-offset: 0.125rem;
+}
+
+.ExhaustedPlanet {
+  background-color: var(--disabled-bg);
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+
+.ExhaustedBottomSection {
+  border-color: var(--disabled-fg) !important;
+  color: var(--disabled-fg);
+  opacity: 0.8;
+}
+
 .PlanetDivWrapper {
   // isolation: isolate;
   position: relative;
@@ -22,6 +51,10 @@
   align-items: center;
   height: 5.125rem;
   // margin: 0.25rem 0.5rem;
+}
+
+.ExhaustedWrapper {
+  color: var(--disabled-fg);
 }
 
 .StructureDiv {

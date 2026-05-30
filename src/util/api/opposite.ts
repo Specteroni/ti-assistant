@@ -70,6 +70,7 @@ import { PassHandler, UnpassHandler } from "../model/unpass";
 import { UpdateBreakthroughStateHandler } from "../model/updateBreakthroughState";
 import { UpdateLeaderStateHandler } from "../model/updateLeaderState";
 import { UpdatePlanetStateHandler } from "../model/updatePlanetState";
+import { UpdateTechStateHandler } from "../model/updateTechState";
 import { UndoGenomeHandler, UseGenomeHandler } from "../model/useGenome";
 
 export function getOppositeHandler(
@@ -140,7 +141,10 @@ export function getOppositeHandler(
     case "UNCLAIM_PLANET": {
       const claimPlanetData: ClaimPlanetData = {
         action: "CLAIM_PLANET",
-        event: data.event,
+        event: {
+          ...data.event,
+          restoreState: true,
+        },
       };
       return new ClaimPlanetHandler(gameData, claimPlanetData);
     }
@@ -454,7 +458,19 @@ export function getOppositeHandler(
         action: "UPDATE_PLANET_STATE",
         event: {
           planet: data.event.planet,
-          state: "READIED",
+          state: data.event.prevState ?? "READIED",
+          prevState: data.event.state,
+        },
+      });
+    }
+    case "UPDATE_TECH_STATE": {
+      return new UpdateTechStateHandler(gameData, {
+        action: "UPDATE_TECH_STATE",
+        event: {
+          faction: data.event.faction,
+          tech: data.event.tech,
+          state: data.event.prevState ?? "ready",
+          prevState: data.event.state,
         },
       });
     }

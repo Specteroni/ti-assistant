@@ -1,4 +1,3 @@
-// Note: This doesn't handle exhausted planets.
 export class UpdatePlanetStateHandler implements Handler {
   constructor(
     public gameData: StoredGameData,

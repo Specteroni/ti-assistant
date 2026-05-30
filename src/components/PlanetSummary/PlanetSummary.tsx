@@ -37,6 +37,9 @@ export default function PlanetSummary({
   let techSkips = 0;
   let attachments = 0;
   for (const planet of planets) {
+    if (planet.state === "EXHAUSTED" || planet.state === "PURGED") {
+      continue;
+    }
     if (
       !planet.attributes.includes("space-station") &&
       !planet.attributes.includes("ocean") &&

@@ -689,6 +689,7 @@ export function LogEntryElement({
       );
     }
     case "UPDATE_PLANET_STATE": {
+      const planetState = logEntry.data.event.state.toLowerCase();
       return (
         <div
           className="flexRow"
@@ -697,7 +698,26 @@ export function LogEntryElement({
             gap: rem(4),
           }}
         >
-          Purged Planet: {logEntry.data.event.planet}
+          Planet {planetState}: {logEntry.data.event.planet}
+        </div>
+      );
+    }
+    case "UPDATE_TECH_STATE": {
+      const tech = techs[logEntry.data.event.tech];
+      const techState = logEntry.data.event.state;
+      return (
+        <div
+          className="flexRow"
+          style={{
+            padding: `0 ${rem(10)}`,
+            gap: rem(4),
+          }}
+        >
+          <ColoredFactionName factionId={logEntry.data.event.faction} />
+          {techState === "exhausted" ? "exhausted" : "readied"}{" "}
+          <span style={{ color: tech ? getTechColor(tech) : undefined }}>
+            {tech?.name ?? logEntry.data.event.tech}
+          </span>
         </div>
       );
     }

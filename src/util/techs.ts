@@ -21,6 +21,10 @@ export function getTechTypeColor(type: TechType) {
   return "var(--foreground-color)";
 }
 
+export function canExhaustTech(tech: Optional<Tech>) {
+  return !!tech && /\bexhaust this card\b/i.test(tech.description ?? "");
+}
+
 /**
  * Gets all the techs not owned by a specific faction.
  */

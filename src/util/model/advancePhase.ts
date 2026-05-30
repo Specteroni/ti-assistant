@@ -4,12 +4,45 @@ import { Optional } from "../types/types";
 import { objectEntries } from "../util";
 import { hasTech } from "../api/techs";
 
+function readyExhaustedPlanets(
+  gameData: StoredGameData,
+  updates: Record<string, any>,
+) {
+  for (const [planetId, planet] of objectEntries(gameData.planets ?? {})) {
+    if (planet.state === "EXHAUSTED") {
+      updates[`planets.${planetId}.state`] = "READIED";
+    }
+  }
+}
+
+function readyExhaustedTechs(
+  factions: Partial<Record<FactionId, Faction>>,
+  updates: Record<string, any>,
+  options?: { skipShareKnowledge?: boolean },
+) {
+  for (const [factionId, faction] of objectEntries(factions ?? {})) {
+    for (const [techId, tech] of objectEntries(faction.techs ?? {})) {
+      if (
+        options?.skipShareKnowledge &&
+        tech.shareKnowledge &&
+        tech.state !== "purged"
+      ) {
+        continue;
+      }
+      if (tech.state === "exhausted") {
+        updates[`factions.${factionId}.techs.${techId}.state`] = "ready";
+      }
+    }
+  }
+}
+
 export class AdvancePhaseHandler implements Handler {
   constructor(
     public gameData: StoredGameData,
     public data: AdvancePhaseData,
   ) {
     this.data.event.factions = structuredClone(gameData.factions);
+    this.data.event.planets = structuredClone(gameData.planets ?? {});
     this.data.event.state = structuredClone(gameData.state);
     this.data.event.strategycards = structuredClone(
       gameData.strategycards ?? {},
@@ -115,6 +148,7 @@ export class AdvancePhaseHandler implements Handler {
       }
       case "STATUS": {
         updates[`state.activeplayer`] = this.gameData.state.speaker;
+        readyExhaustedPlanets(this.gameData, updates);
         const strategyCards = buildStrategyCards(this.gameData, intl);
         const factions = buildFactions(this.gameData, intl);
         for (const strategyCard of Object.values(strategyCards)) {
@@ -135,14 +169,12 @@ export class AdvancePhaseHandler implements Handler {
               updates[`factions.${factionId}.techs.${techId}`] = "DELETE";
               continue;
             }
-            if (tech.state === "exhausted") {
-              updates[`factions.${factionId}.techs.${techId}.state`] = "ready";
-            }
           }
           if (faction.breakthrough?.state === "exhausted") {
             updates[`factions.${factionId}.breakthrough.state`] = "readied";
           }
         }
+        readyExhaustedTechs(factions, updates, { skipShareKnowledge: true });
         for (const [leaderId, leader] of Object.entries(
           this.gameData.leaders ?? {},
         )) {
@@ -173,6 +205,8 @@ export class AdvancePhaseHandler implements Handler {
         updates[`state.agendaNum`] = 1;
         updates[`timers.firstAgenda`] = "DELETE";
         updates[`timers.secondAgenda`] = "DELETE";
+        readyExhaustedPlanets(this.gameData, updates);
+        readyExhaustedTechs(this.gameData.factions, updates);
         break;
       }
     }
@@ -215,6 +249,7 @@ export class RewindPhaseHandler implements Handler {
     return {
       [`sequenceNum`]: "INCREMENT",
       [`factions`]: this.data.event.factions,
+      [`planets`]: this.data.event.planets ?? this.gameData.planets,
       [`state`]: state,
       [`strategycards`]: this.data.event.strategycards,
       [`timers.firstAgenda`]: this.data.event.timers?.firstAgenda ?? 0,

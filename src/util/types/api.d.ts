@@ -49,6 +49,7 @@ type GameUpdateData =
   | (GainRelicData | LoseRelicData)
   | (PurgeRelicData | UnpurgeRelicData)
   | UpdatePlanetStateData
+  | UpdateTechStateData
   | UpdateLeaderStateData
   | UpdateBreakthroughStateData
   | SelectFactionData
@@ -246,6 +247,7 @@ interface AdvancePhaseEvent {
   skipAgenda: boolean;
   // Set by server, used for Undo.
   factions?: Record<string, GameFaction>;
+  planets?: Partial<Record<PlanetId, GamePlanet>>;
   state?: GameState;
   strategycards?: Record<string, GameStrategyCard>;
   timers?: Timers;
@@ -330,6 +332,8 @@ interface ClaimPlanetEvent {
   planet: PlanetId;
   // Set by server
   prevOwner?: FactionId;
+  prevState?: PlanetState;
+  restoreState?: boolean;
 }
 
 interface ClaimPlanetData {
@@ -596,6 +600,8 @@ interface PlayActionCardEvent {
   card: string;
   // The player that played the card, or the target of the card.
   target: FactionId | "None";
+  // Set by server for action cards that modify planet state.
+  prevPlanetStates?: Partial<Record<PlanetId, PlanetState>>;
 }
 
 interface PlayActionCardData {
@@ -874,6 +880,18 @@ interface UpdatePlanetStateEvent {
 interface UpdatePlanetStateData {
   action: "UPDATE_PLANET_STATE";
   event: UpdatePlanetStateEvent;
+}
+
+interface UpdateTechStateEvent {
+  faction: FactionId;
+  tech: TechId;
+  state: TechState;
+  prevState?: TechState;
+}
+
+interface UpdateTechStateData {
+  action: "UPDATE_TECH_STATE";
+  event: UpdateTechStateEvent;
 }
 
 interface StartVotingEvent {}
