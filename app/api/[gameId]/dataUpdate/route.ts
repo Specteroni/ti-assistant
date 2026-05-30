@@ -14,9 +14,7 @@ import {
   getTimersInTransaction,
 } from "../../../../server/util/fetch";
 import {
-  getLocalGameData,
-  getLocalTimers,
-  saveLocalGame,
+  updateLocalGame,
   useLocalFileDb,
 } from "../../../../server/util/localStore";
 import { TURN_BOUNDARIES } from "../../../../src/util/api/actionLog";
@@ -255,38 +253,35 @@ async function updateLocalFileGame(
     });
   }
 
-  const gameData = await getLocalGameData(gameId, "games");
-  const timers = await getLocalTimers(gameId, "timers");
-  gameData.timers = timers;
+  return updateLocalGame(gameId, "games", "timers", (gameData) => {
+    let handler: Optional<Handler>;
+    if (data.action === "UNDO") {
+      const actionToUndo = (gameData.actionLog ?? [])[0];
+      if (!actionToUndo) {
+        return NextResponse.json({ success: true });
+      }
+      handler = getOppositeHandler(gameData, actionToUndo.data);
+    } else {
+      handler = getHandler(gameData, data);
+    }
 
-  let handler: Optional<Handler>;
-  if (data.action === "UNDO") {
-    const actionToUndo = (gameData.actionLog ?? [])[0];
-    if (!actionToUndo) {
+    if (!handler) {
+      throw new Error(`Action ${data.action} not implemented`);
+    }
+
+    if (!handler.validate()) {
       return NextResponse.json({ success: true });
     }
-    handler = getOppositeHandler(gameData, actionToUndo.data);
-  } else {
-    handler = getHandler(gameData, data);
-  }
 
-  if (!handler) {
-    throw new Error(`Action ${data.action} not implemented`);
-  }
+    applyLocalGameUpdates(gameData, handler.getUpdates());
+    updateLocalActionLog(gameData, handler, data.timestamp, data.gameTime);
 
-  if (!handler.validate()) {
+    if (gameData.timers) {
+      gameData.timers.paused = false;
+    }
+
     return NextResponse.json({ success: true });
-  }
-
-  applyLocalGameUpdates(gameData, handler.getUpdates());
-  updateLocalActionLog(gameData, handler, data.timestamp, data.gameTime);
-
-  if (gameData.timers) {
-    gameData.timers.paused = false;
-  }
-
-  await saveLocalGame(gameId, gameData, gameData.timers ?? {});
-  return NextResponse.json({ success: true });
+  });
 }
 
 function convertToServerUpdates(updates: Record<string, any>) {

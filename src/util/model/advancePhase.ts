@@ -16,7 +16,12 @@ function readyExhaustedPlanets(
 }
 
 function readyExhaustedTechs(
-  factions: Partial<Record<FactionId, Faction>>,
+  factions: Partial<
+    Record<
+      FactionId,
+      { techs?: Partial<Record<TechId, Pick<GameTech, "shareKnowledge" | "state">>> }
+    >
+  >,
   updates: Record<string, any>,
   options?: { skipShareKnowledge?: boolean },
 ) {

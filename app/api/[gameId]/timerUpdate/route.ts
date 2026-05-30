@@ -4,8 +4,7 @@ import {
   getTimersInTransaction,
 } from "../../../../server/util/fetch";
 import {
-  getLocalTimers,
-  saveLocalTimers,
+  updateLocalTimers,
   useLocalFileDb,
 } from "../../../../server/util/localStore";
 import { getFirestoreAdmin } from "../../../../src/util/server";
@@ -32,17 +31,15 @@ export async function POST(
       });
     }
 
-    const timers = await getLocalTimers(gameId, "timers");
-    if ((timers.game ?? 0) > (data.timers.game ?? 0)) {
-      return NextResponse.json(timers);
-    }
+    return updateLocalTimers(gameId, "timers", (timers) => {
+      if ((timers.game ?? 0) > (data.timers.game ?? 0)) {
+        return NextResponse.json(timers);
+      }
 
-    delete data.timers.paused;
-    await saveLocalTimers(gameId, {
-      ...timers,
-      ...data.timers,
+      delete data.timers.paused;
+      Object.assign(timers, data.timers);
+      return NextResponse.json({ success: true });
     });
-    return NextResponse.json({ success: true });
   }
 
   const db = await getFirestoreAdmin();

@@ -5,8 +5,7 @@ import {
   getTimersInTransaction,
 } from "../../../../server/util/fetch";
 import {
-  getLocalTimers,
-  saveLocalTimers,
+  updateLocalTimers,
   useLocalFileDb,
 } from "../../../../server/util/localStore";
 import { getFirestoreAdmin } from "../../../../src/util/server";
@@ -30,14 +29,14 @@ export async function POST(
   const data = (await req.json()) as SetPauseData;
 
   if (useLocalFileDb()) {
-    const timers = await getLocalTimers(gameId, "timers");
-    if (data.paused === undefined) {
-      delete timers.paused;
-    } else {
-      timers.paused = data.paused;
-    }
-    await saveLocalTimers(gameId, timers);
-    return NextResponse.json({});
+    return updateLocalTimers(gameId, "timers", (timers) => {
+      if (data.paused === undefined) {
+        delete timers.paused;
+      } else {
+        timers.paused = data.paused;
+      }
+      return NextResponse.json({});
+    });
   }
 
   const db = await getFirestoreAdmin();

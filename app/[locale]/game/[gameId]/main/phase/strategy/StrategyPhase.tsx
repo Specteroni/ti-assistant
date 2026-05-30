@@ -813,15 +813,20 @@ export default function StrategyPhase() {
       </div>
       <div className={styles.MainColumn}>
         <div
-          className="flexRow"
+          className="flexColumn"
           style={{
             position: "relative",
             alignItems: "center",
+            gap: rem(8),
             maxWidth: rem(420),
+            width: "100%",
           }}
         >
           {activeFactionId ? (
-            <div className="flexColumn" style={{ alignItems: "center" }}>
+            <div
+              className="flexColumn"
+              style={{ alignItems: "center", width: "100%" }}
+            >
               <FormattedMessage
                 id="vTtJ6S"
                 description="Label showing that the specific player is the current player."
@@ -867,7 +872,10 @@ export default function StrategyPhase() {
             </div>
           )}
           {onDeckFactionId ? (
-            <div className="flexColumn" style={{ alignItems: "center" }}>
+            <div
+              className="flexColumn"
+              style={{ alignItems: "center", width: "100%" }}
+            >
               <LabeledDiv
                 label={
                   <FormattedMessage
@@ -889,7 +897,7 @@ export default function StrategyPhase() {
                 color={onDeckColors?.color}
                 borderColor={onDeckColors?.border}
                 style={{
-                  width: "fit-content",
+                  width: "100%",
                   minWidth: rem(200),
                 }}
               >

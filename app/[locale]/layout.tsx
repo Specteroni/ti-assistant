@@ -58,7 +58,11 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang={locale} className={finlandica.variable}>
+    <html
+      lang={locale}
+      className={finlandica.variable}
+      suppressHydrationWarning
+    >
       <head>
         <script dangerouslySetInnerHTML={{ __html: getTheme }} />
       </head>

@@ -31,6 +31,8 @@ const LOCAL_STORE_PATH = path.join(
   "local-dev-db.json",
 );
 
+let localStoreQueue: Promise<unknown> = Promise.resolve();
+
 export function useLocalFileDb() {
   return process.env.TIA_LOCAL_FILE_DB === "1";
 }
@@ -56,15 +58,35 @@ async function readLocalStore(): Promise<LocalStore> {
 
 async function writeLocalStore(store: LocalStore) {
   await fs.mkdir(path.dirname(LOCAL_STORE_PATH), { recursive: true });
-  await fs.writeFile(LOCAL_STORE_PATH, JSON.stringify(store, null, 2));
+  const tempPath = `${LOCAL_STORE_PATH}.${process.pid}.${Date.now()}.tmp`;
+  await fs.writeFile(tempPath, JSON.stringify(store, null, 2));
+  await fs.rename(tempPath, LOCAL_STORE_PATH);
 }
 
-export async function getLocalGameData(gameId: string, gamePath: GamePath) {
-  const store = await readLocalStore();
-  const gameData = store[gamePath][gameId];
-  if (gameData) {
-    return clone(gameData);
-  }
+async function getLocalStoreSnapshot() {
+  await localStoreQueue;
+  return readLocalStore();
+}
+
+async function updateLocalStore<T>(
+  updateFn: (store: LocalStore) => Promise<T> | T,
+) {
+  const runUpdate = async () => {
+    const store = await readLocalStore();
+    const result = await updateFn(store);
+    await writeLocalStore(store);
+    return result;
+  };
+
+  const resultPromise = localStoreQueue.then(runUpdate, runUpdate);
+  localStoreQueue = resultPromise.then(
+    () => undefined,
+    () => undefined,
+  );
+  return resultPromise;
+}
+
+function getDefaultGameData(): StoredGameData {
   return {
     factions: {},
     options: BASE_OPTIONS,
@@ -79,13 +101,22 @@ export async function getLocalGameData(gameId: string, gamePath: GamePath) {
   } satisfies StoredGameData;
 }
 
+export async function getLocalGameData(gameId: string, gamePath: GamePath) {
+  const store = await getLocalStoreSnapshot();
+  const gameData = store[gamePath][gameId];
+  if (gameData) {
+    return clone(gameData);
+  }
+  return getDefaultGameData();
+}
+
 export async function getLocalTimers(gameId: string, timerPath: TimerPath) {
-  const store = await readLocalStore();
+  const store = await getLocalStoreSnapshot();
   return clone(store[timerPath][gameId] ?? {});
 }
 
 export async function localGameExists(gameId: string, gamePath: GamePath) {
-  const store = await readLocalStore();
+  const store = await getLocalStoreSnapshot();
   return !!store[gamePath][gameId];
 }
 
@@ -94,36 +125,69 @@ export async function saveLocalGame(
   gameData: StoredGameData,
   timers: Timers = {},
 ) {
-  const store = await readLocalStore();
-  store.games[gameId] = clone(gameData);
-  store.timers[gameId] = clone(timers);
-  await writeLocalStore(store);
+  await updateLocalStore((store) => {
+    store.games[gameId] = clone(gameData);
+    store.timers[gameId] = clone(timers);
+  });
+}
+
+export async function updateLocalGame<T>(
+  gameId: string,
+  gamePath: GamePath,
+  timerPath: TimerPath,
+  updateFn: (gameData: StoredGameData, timers: Timers) => Promise<T> | T,
+) {
+  return updateLocalStore(async (store) => {
+    const gameData = clone(store[gamePath][gameId] ?? getDefaultGameData());
+    const timers = clone(store[timerPath][gameId] ?? {});
+    gameData.timers = timers;
+
+    const result = await updateFn(gameData, timers);
+
+    store[gamePath][gameId] = clone(gameData);
+    store[timerPath][gameId] = clone(gameData.timers ?? timers);
+
+    return result;
+  });
 }
 
 export async function saveLocalTimers(gameId: string, timers: Timers) {
-  const store = await readLocalStore();
-  store.timers[gameId] = clone(timers);
-  await writeLocalStore(store);
+  await updateLocalStore((store) => {
+    store.timers[gameId] = clone(timers);
+  });
+}
+
+export async function updateLocalTimers<T>(
+  gameId: string,
+  timerPath: TimerPath,
+  updateFn: (timers: Timers) => Promise<T> | T,
+) {
+  return updateLocalStore(async (store) => {
+    const timers = clone(store[timerPath][gameId] ?? {});
+    const result = await updateFn(timers);
+    store[timerPath][gameId] = clone(timers);
+    return result;
+  });
 }
 
 export async function getLocalGamePassword(gameId: string) {
-  const store = await readLocalStore();
+  const store = await getLocalStoreSnapshot();
   return store.passwords[gameId];
 }
 
 export async function setLocalGamePassword(gameId: string, password: string) {
-  const store = await readLocalStore();
-  store.passwords[gameId] = password;
-  await writeLocalStore(store);
+  await updateLocalStore((store) => {
+    store.passwords[gameId] = password;
+  });
 }
 
 export async function getLocalSession(sessionId: string) {
-  const store = await readLocalStore();
+  const store = await getLocalStoreSnapshot();
   return clone(store.sessions[sessionId]);
 }
 
 export async function setLocalSession(sessionId: string, session: TIASession) {
-  const store = await readLocalStore();
-  store.sessions[sessionId] = clone(session);
-  await writeLocalStore(store);
+  await updateLocalStore((store) => {
+    store.sessions[sessionId] = clone(session);
+  });
 }

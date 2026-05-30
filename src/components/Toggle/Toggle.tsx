@@ -34,6 +34,7 @@ interface ToggleInfo {
 }
 
 interface ToggleProps {
+  compact?: boolean;
   disabled?: boolean;
   info?: ToggleInfo;
   selected: boolean;
@@ -45,6 +46,7 @@ export default function Toggle({
   selected,
   toggleFn,
   children,
+  compact,
   style = {},
   disabled,
   info,
@@ -52,7 +54,9 @@ export default function Toggle({
   let toggleStyle = getToggleStyle(selected);
   return (
     <label
-      className={`${styles.ToggleContainer} ${disabled ? styles.disabled : ""}`}
+      className={`${styles.ToggleContainer} ${compact ? styles.compact : ""} ${
+        disabled ? styles.disabled : ""
+      }`}
       style={{ ...toggleStyle, ...style }}
     >
       <input

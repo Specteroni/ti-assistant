@@ -38,6 +38,21 @@
   margin: 0.125rem 0.25rem 0.125rem 0.125rem;
 }
 
+.ToggleContainer.compact {
+  padding-right: 0.1875rem;
+  font-size: 0.65625rem;
+}
+
+.ToggleContainer.compact > input[type="checkbox"]::before {
+  width: 0.6375rem;
+  height: 0.6375rem;
+  margin: 0.09375rem 0.1875rem 0.09375rem 0.09375rem;
+}
+
+.ToggleContainer.compact > input[type="checkbox"]:checked::before {
+  font-size: 0.525rem;
+}
+
 .ToggleContainer:hover {
   background-color: var(--dark-hover-bg);
 }

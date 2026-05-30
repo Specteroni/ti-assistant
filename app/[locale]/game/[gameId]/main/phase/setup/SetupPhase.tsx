@@ -185,7 +185,7 @@ export default function SetupPhase() {
           >
             {Object.values(orderedFactionIds).map((factionId) => {
               return (
-                <FactionCard factionId={factionId}>
+                <FactionCard key={factionId} factionId={factionId}>
                   <div
                     className="flexColumn"
                     style={{

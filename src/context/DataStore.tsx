@@ -1,6 +1,6 @@
 "use client";
 
-import { PropsWithChildren } from "react";
+import { PropsWithChildren, useRef } from "react";
 import stableHash from "stable-hash";
 import { buildCompleteGameData } from "../data/gameDataBuilder";
 import { poster } from "../util/api/util";
@@ -103,16 +103,40 @@ function buildDatabaseFns(database: Database): DatabaseFns {
 
   const fns: DatabaseFns = {
     initialize: (gameId: string, gameData: StoredGameData) => {
+      const existingSequenceNum = database.storedData?.sequenceNum ?? 0;
+      const incomingSequenceNum = gameData.sequenceNum ?? 0;
+
+      if (
+        database.gameId === gameId &&
+        database.storedData &&
+        incomingSequenceNum <= existingSequenceNum
+      ) {
+        if (
+          database.data &&
+          gameData.viewOnly !== undefined &&
+          database.data.viewOnly !== gameData.viewOnly
+        ) {
+          database.data.viewOnly = gameData.viewOnly;
+        }
+        return;
+      }
+
+      const viewOnly = gameData.viewOnly ?? database.data?.viewOnly;
+
       database.gameId = gameId;
 
-      database.storedData = gameData;
-      database.latestServerData = gameData;
+      database.storedData = structuredClone(gameData);
+      database.latestServerData = structuredClone(gameData);
 
       database.data = buildCompleteGameData(
         database.storedData,
         database.baseData,
       );
-      database.lastLocalSequenceNum = 0;
+      database.data.gameId = gameId;
+      if (viewOnly !== undefined) {
+        database.data.viewOnly = viewOnly;
+      }
+      database.lastLocalSequenceNum = database.storedData.sequenceNum;
     },
     listen: (callback: () => void) => {
       const id = makeUniqueId(database.listeners, 12);
@@ -171,9 +195,17 @@ function buildDatabaseFns(database: Database): DatabaseFns {
         return;
       }
       if (source === "SERVER") {
-        database.latestServerData = structuredClone(
-          updateFn(database.latestServerData),
+        const nextServerData = structuredClone(
+          updateFn(structuredClone(database.latestServerData)),
         );
+        if (
+          (nextServerData.sequenceNum ?? 0) <
+          (database.latestServerData.sequenceNum ?? 0)
+        ) {
+          return;
+        }
+
+        database.latestServerData = nextServerData;
 
         if (
           database.lastLocalSequenceNum > database.latestServerData.sequenceNum
@@ -181,7 +213,7 @@ function buildDatabaseFns(database: Database): DatabaseFns {
           return;
         }
 
-        database.storedData = structuredClone(updateFn(database.storedData));
+        database.storedData = structuredClone(database.latestServerData);
         const viewOnly = database.data.viewOnly;
         database.data = buildCompleteGameData(
           database.storedData,
@@ -257,22 +289,30 @@ export default function DataStore({
   baseData,
   children,
 }: PropsWithChildren<{ baseData: BaseData }>) {
-  const database: Database = {
-    // Data
-    gameId: undefined,
-    data: undefined,
-    baseData,
-    storedData: undefined,
-    latestServerData: undefined,
-    lastLocalSequenceNum: 0,
-    listeners: {},
-    subscribers: {},
-    hashes: {},
-  };
-  const fns = buildDatabaseFns(database);
+  const databaseRef = useRef<Optional<Database>>(undefined);
+  if (!databaseRef.current) {
+    databaseRef.current = {
+      // Data
+      gameId: undefined,
+      data: undefined,
+      baseData,
+      storedData: undefined,
+      latestServerData: undefined,
+      lastLocalSequenceNum: 0,
+      listeners: {},
+      subscribers: {},
+      hashes: {},
+    };
+  }
+  databaseRef.current.baseData = baseData;
+
+  const fnsRef = useRef<Optional<DatabaseFns>>(undefined);
+  if (!fnsRef.current) {
+    fnsRef.current = buildDatabaseFns(databaseRef.current);
+  }
 
   return (
-    <DatabaseFnsContext.Provider value={fns}>
+    <DatabaseFnsContext.Provider value={fnsRef.current}>
       {children}
     </DatabaseFnsContext.Provider>
   );

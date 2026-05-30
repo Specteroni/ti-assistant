@@ -117,6 +117,7 @@ export function TechRow({
   if (!tech) {
     return null;
   }
+  const techData = tech;
 
   const factionTech = factionId ? factions[factionId]?.techs[techId] : undefined;
   const techState = factionTech?.state ?? "ready";
@@ -124,7 +125,7 @@ export function TechRow({
     !!factionId &&
     !!factionTech &&
     techState !== "purged" &&
-    canExhaustTech(tech) &&
+    canExhaustTech(techData) &&
     !viewOnly;
   const exhausted = techState === "exhausted";
 
@@ -133,16 +134,16 @@ export function TechRow({
       <ModalContent
         title={
           <div className="flexRow" style={{ fontSize: rem(40), gap: rem(20) }}>
-            {tech.name}
-            {tech.type === "UPGRADE" ? (
-              <UnitIcon type={tech.unitType} size={20} />
+            {techData.name}
+            {"unitType" in techData ? (
+              <UnitIcon type={techData.unitType} size={20} />
             ) : null}
-            <TechPrereqDots prereqs={tech.prereqs} width={4} />
+            <TechPrereqDots prereqs={techData.prereqs} width={4} />
           </div>
         }
       >
         <div className={styles.infoContent}>
-          <InfoContent tech={tech} />
+          <InfoContent tech={techData} />
         </div>
       </ModalContent>,
     );
@@ -155,7 +156,7 @@ export function TechRow({
     dataUpdate(
       Events.UpdateTechStateEvent(
         factionId,
-        tech.id,
+        techId,
         exhausted ? "ready" : "exhausted",
       ),
     );

@@ -75,7 +75,7 @@ export function usePlanetExhaustion(planet: Planet) {
     const nextState = exhausted ? "READIED" : "EXHAUSTED";
     await dataUpdate(Events.UpdatePlanetStateEvent(planet.id, nextState));
 
-    if (nextState !== "EXHAUSTED" || phase !== "AGENDA" || !planet.owner) {
+    if (phase !== "AGENDA" || !planet.owner) {
       return;
     }
 
@@ -89,10 +89,15 @@ export function usePlanetExhaustion(planet: Planet) {
       return;
     }
 
+    const updatedVotes =
+      nextState === "EXHAUSTED"
+        ? factionVotes.votes + planetVotes
+        : Math.max(factionVotes.votes - planetVotes, 0);
+
     await dataUpdate(
       Events.CastVotesEvent(
         planet.owner,
-        factionVotes.votes + planetVotes,
+        updatedVotes,
         factionVotes.extraVotes,
         factionVotes.target,
       ),
@@ -315,12 +320,21 @@ export default function PlanetRow({
         ) : null}
         {showPlanetStateToggle() ? (
           <Toggle
+            compact
             selected={planetExhaustion.exhausted}
             toggleFn={planetExhaustion.toggle}
             disabled={viewOnly}
             style={{ marginLeft: rem(2) }}
           >
-            <FlipSVG />
+            <span
+              style={{
+                display: "flex",
+                width: rem(10.5),
+                height: rem(10.5),
+              }}
+            >
+              <FlipSVG />
+            </span>
           </Toggle>
         ) : null}
         {!opts.showAttachButton ? (
