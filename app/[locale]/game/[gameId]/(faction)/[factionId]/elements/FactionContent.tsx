@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { FormattedMessage } from "react-intl";
 import Conditional from "../../../../../../../src/components/Conditional/Conditional";
+import FactionComponents from "../../../../../../../src/components/FactionComponents/FactionComponents";
 import LabeledLine from "../../../../../../../src/components/LabeledLine/LabeledLine";
+import {
+  useActiveFactionId,
+  useOnDeckFactionId,
+} from "../../../../../../../src/context/gameDataHooks";
 import { FactionSummary } from "../../../../../../../src/FactionSummary";
 import { Tab, TabBody } from "../../../../../../../src/Tab";
 import { rem } from "../../../../../../../src/util/util";
@@ -10,6 +15,7 @@ import PhaseSection from "./PhaseSection";
 import PlanetTab from "./PlanetTab";
 import TechTab from "./TechTab";
 import ChipGroup from "../../../../../../../src/components/Chip/ChipGroup";
+import UnitOverviewTab from "./UnitOverviewTab";
 
 export default function FactionContent({
   factionId,
@@ -17,6 +23,10 @@ export default function FactionContent({
   factionId: FactionId;
 }) {
   const [tabShown, setTabShown] = useState<string>("");
+  const activeFactionId = useActiveFactionId();
+  const onDeckFactionId = useOnDeckFactionId();
+  const showOnDeckBanner =
+    factionId === onDeckFactionId && factionId !== activeFactionId;
 
   function toggleTabShown(tab: string) {
     if (tabShown === tab) {
@@ -28,6 +38,7 @@ export default function FactionContent({
 
   return (
     <div className="flexColumn" style={{ gap: rem(8), width: "100%" }}>
+      {showOnDeckBanner ? <OnDeckBanner factionId={factionId} /> : null}
       <FactionSummary factionId={factionId} />
       <div
         style={{
@@ -109,6 +120,13 @@ export default function FactionContent({
                     />
                   </Tab>
                 </Conditional>
+                <Tab selectTab={toggleTabShown} id="units" selectedId={tabShown}>
+                  <FormattedMessage
+                    id="FactionDetails.Units"
+                    description="Short label for a faction details tab showing unit cards."
+                    defaultMessage="Units"
+                  />
+                </Tab>
               </ChipGroup>
               <Conditional appSection="TECHS">
                 <TabBody id="techs" selectedId={tabShown}>
@@ -129,10 +147,49 @@ export default function FactionContent({
                   <ObjectiveTab factionId={factionId} />
                 </TabBody>
               </Conditional>
+              <TabBody id="units" selectedId={tabShown}>
+                <LabeledLine />
+                <UnitOverviewTab factionId={factionId} />
+              </TabBody>
             </div>
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function OnDeckBanner({ factionId }: { factionId: FactionId }) {
+  return (
+    <div
+      className="flexRow"
+      style={{
+        width: "calc(100% - 1rem)",
+        maxWidth: rem(760),
+        boxSizing: "border-box",
+        justifyContent: "center",
+        gap: rem(8),
+        padding: `${rem(6)} ${rem(12)}`,
+        border: "1px solid var(--yellow-faction-color)",
+        borderRadius: rem(4),
+        backgroundColor: "rgba(255, 190, 64, 0.18)",
+        color: "var(--foreground-color)",
+        boxShadow: "0 0 12px rgba(255, 190, 64, 0.45)",
+        fontFamily: "var(--main-font)",
+        fontSize: rem(18),
+        lineHeight: 1.1,
+        textAlign: "center",
+      }}
+    >
+      <FactionComponents.Icon factionId={factionId} size={18} />
+      <span>
+        <FormattedMessage
+          id="CA3ilB"
+          defaultMessage="You are up next"
+          description="Warning shown to a player when their faction is next in turn order."
+        />
+      </span>
+      <FactionComponents.Icon factionId={factionId} size={18} />
     </div>
   );
 }

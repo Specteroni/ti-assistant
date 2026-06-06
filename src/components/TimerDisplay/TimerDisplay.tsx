@@ -58,7 +58,7 @@ export default function TimerDisplay({
   };
 
   return (
-    <div className="flexRow" style={timerStyle}>
+    <div className="flexRow" style={timerStyle} suppressHydrationWarning>
       {label ? (
         <div
           style={{
@@ -72,16 +72,36 @@ export default function TimerDisplay({
           {label}
         </div>
       ) : null}
-      {tenHours > 0 ? <span style={numberStyle}>{tenHours}</span> : null}
-      {!hideHours || hours > 0 ? (
-        <span style={numberStyle}>{oneHours}</span>
+      {tenHours > 0 ? (
+        <span style={numberStyle} suppressHydrationWarning>
+          {tenHours}
+        </span>
       ) : null}
-      {!hideHours || hours > 0 ? <span style={numberStyle}>:</span> : null}
-      <span style={numberStyle}>{tenMinutes}</span>
-      <span style={numberStyle}>{oneMinutes}</span>
-      <span style={numberStyle}>:</span>
-      <span style={numberStyle}>{tenSeconds}</span>
-      <span style={numberStyle}>{oneSeconds}</span>
+      {!hideHours || hours > 0 ? (
+        <span style={numberStyle} suppressHydrationWarning>
+          {oneHours}
+        </span>
+      ) : null}
+      {!hideHours || hours > 0 ? (
+        <span style={numberStyle} suppressHydrationWarning>
+          :
+        </span>
+      ) : null}
+      <span style={numberStyle} suppressHydrationWarning>
+        {tenMinutes}
+      </span>
+      <span style={numberStyle} suppressHydrationWarning>
+        {oneMinutes}
+      </span>
+      <span style={numberStyle} suppressHydrationWarning>
+        :
+      </span>
+      <span style={numberStyle} suppressHydrationWarning>
+        {tenSeconds}
+      </span>
+      <span style={numberStyle} suppressHydrationWarning>
+        {oneSeconds}
+      </span>
 
       {tenHours === 0 ? null : null}
     </div>

@@ -7,17 +7,46 @@ import RedTechSVG from "./icons/techs/RedTech";
 import YellowTechSVG from "./icons/techs/YellowTech";
 import { Tab, TabBody } from "./Tab";
 import { TechRow } from "./TechRow";
-import { sortTechsByName, sortTechsByPreReqAndExpansion } from "./util/techs";
+import {
+  useAttachments,
+  useOptions,
+  usePlanets,
+  useRelics,
+  useTechs,
+} from "./context/dataHooks";
+import { useFactions } from "./context/factionDataHooks";
+import { applyAllPlanetAttachments } from "./util/planets";
+import {
+  canResearchTech,
+  getFactionPreReqs,
+  sortTechsByName,
+  sortTechsByPreReqAndExpansion,
+} from "./util/techs";
 import { rem } from "./util/util";
 import ChipGroup from "./components/Chip/ChipGroup";
 
 interface AddTechListProps {
   techs: Tech[];
   addTech: (techId: TechId) => void;
+  factionId?: FactionId;
 }
 
-export function AddTechList({ techs, addTech }: AddTechListProps) {
+export function AddTechList({ techs, addTech, factionId }: AddTechListProps) {
   const [tabShown, setTabShown] = useState("blue");
+  const attachments = useAttachments();
+  const factions = useFactions();
+  const options = useOptions();
+  const planets = usePlanets();
+  const relics = useRelics();
+  const allTechs = useTechs();
+  const faction = factionId ? factions[factionId] : undefined;
+  const factionPreReqs = getFactionPreReqs(
+    faction,
+    allTechs,
+    options,
+    applyAllPlanetAttachments(Object.values(planets), attachments),
+    relics,
+  );
 
   const blueTechs = techs.filter((tech) => {
     return tech.type === "BLUE";
@@ -39,6 +68,41 @@ export function AddTechList({ techs, addTech }: AddTechListProps) {
     return tech.type === "UPGRADE";
   });
   sortTechsByName(unitUpgrades);
+
+  function canFactionResearch(tech: Tech) {
+    if (!factionId) {
+      return true;
+    }
+
+    let isTechOwned = false;
+    for (const faction of Object.values(factions)) {
+      if (faction.techs[tech.id]) {
+        isTechOwned = true;
+        break;
+      }
+    }
+
+    return canResearchTech(
+      tech,
+      options,
+      factionPreReqs,
+      faction,
+      isTechOwned,
+      allTechs,
+    );
+  }
+
+  function renderTechRow(tech: Tech) {
+    const canResearch = canFactionResearch(tech);
+    return (
+      <TechRow
+        key={tech.id}
+        techId={tech.id}
+        addTech={addTech}
+        opts={{ fade: !canResearch }}
+      />
+    );
+  }
 
   return (
     <div className="flexColumn" style={{ width: "100%" }}>
@@ -109,9 +173,7 @@ export function AddTechList({ techs, addTech }: AddTechListProps) {
             alignItems: "stretch",
           }}
         >
-          {blueTechs.map((tech) => {
-            return <TechRow key={tech.id} techId={tech.id} addTech={addTech} />;
-          })}
+          {blueTechs.map(renderTechRow)}
         </div>
       </TabBody>
       <TabBody id="green" selectedId={tabShown} style={{ width: "100%" }}>
@@ -127,9 +189,7 @@ export function AddTechList({ techs, addTech }: AddTechListProps) {
             alignItems: "stretch",
           }}
         >
-          {greenTechs.map((tech) => {
-            return <TechRow key={tech.id} techId={tech.id} addTech={addTech} />;
-          })}
+          {greenTechs.map(renderTechRow)}
         </div>
       </TabBody>
       <TabBody id="yellow" selectedId={tabShown} style={{ width: "100%" }}>
@@ -145,9 +205,7 @@ export function AddTechList({ techs, addTech }: AddTechListProps) {
             alignItems: "stretch",
           }}
         >
-          {yellowTechs.map((tech) => {
-            return <TechRow key={tech.id} techId={tech.id} addTech={addTech} />;
-          })}
+          {yellowTechs.map(renderTechRow)}
         </div>
       </TabBody>
       <TabBody id="red" selectedId={tabShown} style={{ width: "100%" }}>
@@ -163,9 +221,7 @@ export function AddTechList({ techs, addTech }: AddTechListProps) {
             alignItems: "stretch",
           }}
         >
-          {redTechs.map((tech) => {
-            return <TechRow key={tech.id} techId={tech.id} addTech={addTech} />;
-          })}
+          {redTechs.map(renderTechRow)}
         </div>
       </TabBody>
       <TabBody id="upgrades" selectedId={tabShown} style={{ width: "100%" }}>
@@ -181,9 +237,7 @@ export function AddTechList({ techs, addTech }: AddTechListProps) {
             alignItems: "stretch",
           }}
         >
-          {unitUpgrades.map((tech) => {
-            return <TechRow key={tech.id} techId={tech.id} addTech={addTech} />;
-          })}
+          {unitUpgrades.map(renderTechRow)}
         </div>
       </TabBody>
     </div>

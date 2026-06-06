@@ -1,7 +1,7 @@
 "use client";
 
 import QRCode from "qrcode";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import { AgendaRow } from "../../AgendaRow";
 import { ClientOnlyHoverMenu } from "../../HoverMenu";
@@ -22,11 +22,6 @@ import { rem } from "../../util/util";
 import GameTimer from "../GameTimer/GameTimer";
 import styles from "./Header.module.scss";
 
-const BASE_URL =
-  process.env.GAE_SERVICE === "dev"
-    ? "https://dev-dot-twilight-imperium-360307.wm.r.appspot.com"
-    : "https://ti-assistant.com";
-
 export default function Header({ archive }: { archive?: boolean }) {
   const dataUpdate = useDataUpdate();
   const enterPassword = useEnterPassword();
@@ -43,11 +38,16 @@ export default function Header({ archive }: { archive?: boolean }) {
 
   const [qrCode, setQrCode] = useState<string>();
 
-  if (!qrCode && gameId) {
+  useEffect(() => {
+    if (!gameId) {
+      setQrCode(undefined);
+      return;
+    }
+
+    const localePrefix =
+      intl.locale && intl.locale !== "en" ? `/${intl.locale}` : "/en";
     QRCode.toDataURL(
-      `${BASE_URL}${
-        intl.locale && intl.locale !== "en" ? `/${intl.locale}` : ""
-      }/game/${gameId}`,
+      `${window.location.origin}${localePrefix}/game/${gameId}`,
       {
         color: {
           dark: "#eeeeeeff",
@@ -63,7 +63,7 @@ export default function Header({ archive }: { archive?: boolean }) {
         setQrCode(url);
       },
     );
-  }
+  }, [gameId, intl.locale]);
 
   let gameFinished = false;
   if (options && factions) {

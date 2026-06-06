@@ -3,7 +3,7 @@
 import { CSSProperties, use, useEffect } from "react";
 import TimerDisplay from "./components/TimerDisplay/TimerDisplay";
 import { TimerContext } from "./context/contexts";
-import { useTimers, useViewOnly } from "./context/dataHooks";
+import { useTimers } from "./context/dataHooks";
 
 interface FactionTimerProps {
   active: boolean;
@@ -25,16 +25,15 @@ export function StaticFactionTimer({
 export function FactionTimer({ active, factionId, style }: FactionTimerProps) {
   const timers = useTimers();
   const timerFns = use(TimerContext);
-  const viewOnly = useViewOnly();
 
   const factionTimer = timers[factionId] ?? 0;
 
   useEffect(() => {
-    if (viewOnly || !active) {
+    if (!active) {
       return;
     }
     return timerFns.activateTimer(factionId);
-  }, [factionId, viewOnly, timerFns, active]);
+  }, [factionId, timerFns, active]);
 
   return <TimerDisplay time={factionTimer} style={style} />;
 }
@@ -46,16 +45,15 @@ export function FactionSecondaryTimer({
 }: FactionTimerProps & { active: boolean }) {
   const timers = useTimers();
   const timerFns = use(TimerContext);
-  const viewOnly = useViewOnly();
 
   const factionTimer = timers[`${factionId}-secondary`] ?? 0;
 
   useEffect(() => {
-    if (viewOnly || !active) {
+    if (!active) {
       return;
     }
     return timerFns.activateTimer(`${factionId}-secondary`);
-  }, [factionId, viewOnly, timerFns, active]);
+  }, [factionId, timerFns, active]);
 
   return <TimerDisplay time={factionTimer} hideHours style={style} />;
 }

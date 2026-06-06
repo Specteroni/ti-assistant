@@ -53,15 +53,20 @@ export async function getFirestoreAdmin() {
   const emulator = process.env.FIRESTORE_EMULATOR_HOST;
   const projectId = process.env.NEXT_PUBLIC_TI_PROJECT;
   if (env === "production" || !emulator) {
-    const serviceAccount = JSON.parse(
-      await readFile(
-        `${process.cwd()}/server/twilight-imperium-360307-ea7cce25efeb.json`,
-        "utf8",
-      ),
-    );
-    initializeApp({
-      credential: cert(serviceAccount as any),
-    });
+    try {
+      const serviceAccount = JSON.parse(
+        await readFile(
+          `${process.cwd()}/server/twilight-imperium-360307-ea7cce25efeb.json`,
+          "utf8",
+        ),
+      );
+      initializeApp({
+        credential: cert(serviceAccount as any),
+        projectId,
+      });
+    } catch {
+      initializeApp({ projectId });
+    }
   } else {
     initializeApp({ projectId });
   }

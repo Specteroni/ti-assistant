@@ -21,11 +21,11 @@ export default function GameTimer({ frozen = false }) {
   const gameTimer = timers.game ?? 0;
 
   useEffect(() => {
-    if (viewOnly || phase === "END") {
+    if (phase === "END") {
       return;
     }
     return timerFns.activateTimer("game");
-  }, [viewOnly, timerFns, phase]);
+  }, [timerFns, phase]);
 
   const paused = timers.paused;
 

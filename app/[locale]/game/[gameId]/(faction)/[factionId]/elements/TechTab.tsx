@@ -69,6 +69,7 @@ export default function TechTab({ factionId }: { factionId: FactionId }) {
               >
                 <AddTechList
                   techs={remainingTechs}
+                  factionId={factionId}
                   addTech={(techId) =>
                     dataUpdate(Events.AddTechEvent(factionId, techId))
                   }

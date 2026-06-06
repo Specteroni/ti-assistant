@@ -1064,9 +1064,10 @@ export default function StatusPhase() {
                               gap: "0.25rem",
                             }}
                           >
-                            {abilities.map((ability) => {
+                            {abilities.map((ability, index) => {
                               return (
                                 <Reminder
+                                  key={`${ability.type}-${ability.subType ?? "none"}-${ability.name}-${index}`}
                                   text={ability.name}
                                   type={ability.type}
                                   subType={ability.subType}
@@ -1285,9 +1286,10 @@ export default function StatusPhase() {
                             gap: "0.25rem",
                           }}
                         >
-                          {abilities.map((ability) => {
+                          {abilities.map((ability, index) => {
                             return (
                               <Reminder
+                                key={`${ability.type}-${ability.subType ?? "none"}-${ability.name}-${index}`}
                                 text={ability.name}
                                 type={ability.type}
                                 subType={ability.subType}

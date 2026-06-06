@@ -6,15 +6,15 @@ import QRCodeButton from "./QRCodeButton";
 import { usePathname } from "next/navigation";
 import UndoButton from "../UndoButton/UndoButton";
 
-const BASE_URL =
-  process.env.GAE_SERVICE === "dev"
-    ? "https://dev.ti-assistant.com"
-    : "https://ti-assistant.com";
+function getCurrentGameUrl(gameId: string) {
+  const locale = window.location.pathname.split("/")[1] || "en";
+  return `${window.location.origin}/${locale}/game/${gameId}`;
+}
 
 function getQRCode(gameId: string, size: number): Promise<string> {
   return new Promise<string>((resolve) => {
     QRCode.toDataURL(
-      `${BASE_URL}/game/${gameId}`,
+      getCurrentGameUrl(gameId),
       {
         color: {
           dark: "#cecece",
@@ -46,7 +46,7 @@ export default function QRCodeButtonWrapper() {
     };
 
     makeQRCode(gameId);
-  }, [gameId]);
+  }, [gameId, pathname]);
 
   if (!gameId || gameId === "") {
     return null;

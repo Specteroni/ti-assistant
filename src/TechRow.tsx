@@ -207,7 +207,7 @@ export function TechRow({
             flexDirection: "row",
             alignItems: "center",
             width: "100%",
-            opacity: opts.fade ? 0.25 : exhausted ? 0.5 : undefined,
+            opacity: opts.fade ? 0.45 : exhausted ? 0.5 : undefined,
             filter: exhausted ? "grayscale(1)" : undefined,
           }}
         >

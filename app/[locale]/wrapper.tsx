@@ -1,11 +1,11 @@
 "use client";
 
 import Cookies from "js-cookie";
-import { PropsWithChildren, useState } from "react";
+import { PropsWithChildren, useEffect, useState } from "react";
 import { IntlProvider } from "react-intl";
 import { SettingsContext } from "../../src/context/contexts";
 import { getSettings } from "../../src/util/client";
-import { Settings } from "../../src/util/settings";
+import { DEFAULT_SETTINGS, Settings } from "../../src/util/settings";
 
 export default function Wrapper({
   messages,
@@ -29,7 +29,11 @@ export default function Wrapper({
 }
 
 export function SettingsProvider({ children }: PropsWithChildren) {
-  const [settings, setSettings] = useState(getSettings());
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+
+  useEffect(() => {
+    setSettings(getSettings());
+  }, []);
 
   function updateSetting<T extends keyof Settings>(
     setting: T,

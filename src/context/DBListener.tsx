@@ -11,8 +11,11 @@ import {
 } from "firebase/firestore";
 import { use, useEffect } from "react";
 import DBConnection from "../../src/data/DBConnection";
+import { mergeLocalTimers } from "../../src/util/timers";
 import { ActionLog } from "../../src/util/types/types";
 import { DatabaseFnsContext } from "./contexts";
+
+const LOCAL_FILE_DB_POLL_INTERVAL_MS = 1000;
 
 export default function DBListener({
   gameId,
@@ -25,7 +28,53 @@ export default function DBListener({
 
   useEffect(() => {
     if (process.env.NEXT_PUBLIC_TI_LOCAL_FILE_DB === "1") {
-      return;
+      let pollTimeout: ReturnType<typeof setTimeout>;
+      let stopped = false;
+
+      async function pollLocalSnapshot() {
+        try {
+          const archiveQuery = archive ? "?archive=1" : "";
+          const response = await fetch(
+            `/api/${gameId}/snapshot${archiveQuery}`,
+            {
+              cache: "no-store",
+              credentials: "include",
+            },
+          );
+
+          if (response.ok) {
+            const snapshot = (await response.json()) as {
+              gameData: StoredGameData;
+              timers: Timers;
+            };
+            const currentTimers = databaseFns.getValue<Timers>("timers") ?? {};
+            const timers = mergeLocalTimers(currentTimers, snapshot.timers);
+
+            databaseFns.update((storedData) => {
+              const nextData = structuredClone(snapshot.gameData);
+              nextData.timers = timers;
+              nextData.viewOnly = storedData.viewOnly;
+              return nextData;
+            }, "SERVER");
+          }
+        } catch (error) {
+          console.warn("Unable to sync local game snapshot", error);
+        } finally {
+          if (!stopped) {
+            pollTimeout = setTimeout(
+              pollLocalSnapshot,
+              LOCAL_FILE_DB_POLL_INTERVAL_MS,
+            );
+          }
+        }
+      }
+
+      pollLocalSnapshot();
+
+      return () => {
+        stopped = true;
+        clearTimeout(pollTimeout);
+      };
     }
 
     const db = DBConnection.get();
