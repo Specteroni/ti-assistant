@@ -26,6 +26,7 @@ import { Events } from "../../util/api/events";
 import { applyPlanetAttachments } from "../../util/planets";
 import { Optional } from "../../util/types/types";
 import { rem } from "../../util/util";
+import { getVotesAfterPlanetStateChange } from "../../util/votes";
 import { ModalContent } from "../Modal/Modal";
 import PlanetIcon from "../PlanetIcon/PlanetIcon";
 import LegendaryPlanetIcon from "../PlanetIcons/LegendaryPlanetIcon";
@@ -89,10 +90,11 @@ export function usePlanetExhaustion(planet: Planet) {
       return;
     }
 
-    const updatedVotes =
-      nextState === "EXHAUSTED"
-        ? factionVotes.votes + planetVotes
-        : Math.max(factionVotes.votes - planetVotes, 0);
+    const updatedVotes = getVotesAfterPlanetStateChange(
+      factionVotes.votes,
+      planetVotes,
+      nextState,
+    );
 
     await dataUpdate(
       Events.CastVotesEvent(

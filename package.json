@@ -33,6 +33,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build --webpack",
+    "test": "node scripts/run-tests.js",
     "lint": "next lint",
     "start": "NODE_OPTIONS='--require ./server/profiler.js' next start",
     "extract": "formatjs extract '{app,pages,server,src}/**/*.{js,ts,tsx}' --ignore '{app,pages,server,src}/**/*.d.ts' --out-file server/lang/en.json",
