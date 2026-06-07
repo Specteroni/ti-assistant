@@ -79,6 +79,7 @@ export default function LoadingFactionSummary() {
         factionId="Vuil'raith Cabal"
         planets={updatedPlanets}
         hasXxchaHero={false}
+        countExhaustedValues
       />
     </div>
   );

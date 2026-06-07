@@ -5,16 +5,18 @@ import { useGameId } from "../../context/dataHooks";
 import QRCodeButton from "./QRCodeButton";
 import { usePathname } from "next/navigation";
 import UndoButton from "../UndoButton/UndoButton";
+import { getShareGameUrl } from "../../util/clientUrl";
 
-function getCurrentGameUrl(gameId: string) {
+async function getCurrentGameUrl(gameId: string) {
   const locale = window.location.pathname.split("/")[1] || "en";
-  return `${window.location.origin}/${locale}/game/${gameId}`;
+  return getShareGameUrl(gameId, locale);
 }
 
-function getQRCode(gameId: string, size: number): Promise<string> {
+async function getQRCode(gameId: string, size: number): Promise<string> {
+  const url = await getCurrentGameUrl(gameId);
   return new Promise<string>((resolve) => {
     QRCode.toDataURL(
-      getCurrentGameUrl(gameId),
+      url,
       {
         color: {
           dark: "#cecece",

@@ -201,6 +201,7 @@ function SummaryPart({
           factionId="Vuil'raith Cabal"
           planets={planets}
           hasXxchaHero={false}
+          countExhaustedValues
         />
       );
     case "TIMER":

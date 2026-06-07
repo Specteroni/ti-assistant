@@ -284,6 +284,15 @@ interface CastVotesEvent {
   target?: string;
   votes: number;
   extraVotes: number;
+  prevTarget?: string;
+  prevVotes?: number;
+  prevExtraVotes?: number;
+  planetStateChange?: {
+    planet: PlanetId;
+    state: PlanetState;
+    prevState: PlanetState;
+  };
+  undoPlanetStateChange?: boolean;
 }
 
 interface CastVotesData {

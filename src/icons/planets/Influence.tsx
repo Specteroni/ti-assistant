@@ -1,3 +1,5 @@
+import { useId } from "react";
+
 export default function InfluenceSVG({
   color = "#72d4f7",
   influence,
@@ -5,6 +7,7 @@ export default function InfluenceSVG({
   color?: string;
   influence: number;
 }) {
+  const filterId = `${useId().replace(/:/g, "")}-influence-glow`;
   const fontSize = influence > 9 ? "8px" : "11px";
   const fontY = influence > 9 ? "172.5" : "173.33505";
 
@@ -18,7 +21,7 @@ export default function InfluenceSVG({
     >
       <defs>
         <filter
-          id="filter45612"
+          id={filterId}
           x="-.1534"
           y="-.1328"
           width="1.307"
@@ -42,7 +45,7 @@ export default function InfluenceSVG({
           transform="matrix(.2736 0 0 .2736 136.4 163.4)"
           d="m42.01 38.36-26.55 15.33-26.55-15.33v-30.65l26.55-15.33 26.55 15.33z"
           fill="none"
-          filter="url(#filter45612)"
+          filter={`url(#${filterId})`}
           stroke={color}
           strokeWidth="4"
         />

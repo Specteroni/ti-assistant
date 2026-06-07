@@ -2,6 +2,7 @@ import { PlanetPanelView } from "../components/PlanetModal/PlanetPanel";
 
 export const DEFAULT_SETTINGS: Settings = {
   "display-objective-description": false,
+  "faction-planet-view": "GRID",
   "group-techs-by-faction": false,
   "planet-panel-view": "CLASSIC",
   "show-turn-timer": true,
@@ -16,6 +17,7 @@ export const DEFAULT_SETTINGS: Settings = {
 
 export interface Settings {
   "display-objective-description": boolean;
+  "faction-planet-view": PlanetPanelView;
   "group-techs-by-faction": boolean;
   "planet-panel-view": PlanetPanelView;
   "show-turn-timer": boolean;

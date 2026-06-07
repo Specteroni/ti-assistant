@@ -3,6 +3,7 @@ import { useOptions, useViewOnly } from "../../context/dataHooks";
 import { useOceans } from "../../context/planetDataHooks";
 import { useDataUpdate } from "../../util/api/dataUpdate";
 import { Events } from "../../util/api/events";
+import { computePlanetSummaryValues } from "../../util/planetSummary";
 import { getRadialPosition } from "../../util/util";
 import PlanetIcon from "../PlanetIcon/PlanetIcon";
 import LegendaryPlanetIcon from "../PlanetIcons/LegendaryPlanetIcon";
@@ -14,6 +15,7 @@ interface PlanetSummaryProps {
   factionId: FactionId;
   planets: Planet[];
   hasXxchaHero: boolean;
+  countExhaustedValues?: boolean;
 }
 
 // TODO: Figure out how to display oceans.
@@ -21,72 +23,33 @@ export default function PlanetSummary({
   factionId,
   planets,
   hasXxchaHero,
+  countExhaustedValues = false,
 }: PlanetSummaryProps) {
   const dataUpdate = useDataUpdate();
   const oceans = useOceans();
   const options = useOptions();
   const viewOnly = useViewOnly();
 
-  let numPlanets = 0;
-  let resources = 0;
-  let influence = 0;
-  let cultural = 0;
-  let hazardous = 0;
-  let industrial = 0;
-  let legendary = 0;
-  let techSkips = 0;
-  let attachments = 0;
-  for (const planet of planets) {
-    if (planet.state === "EXHAUSTED" || planet.state === "PURGED") {
-      continue;
-    }
-    if (
-      !planet.attributes.includes("space-station") &&
-      !planet.attributes.includes("ocean") &&
-      !planet.attributes.includes("synthetic")
-    ) {
-      numPlanets++;
-    }
-    if (
-      hasXxchaHero &&
+  const hasXxchaHeroResources =
+    hasXxchaHero &&
       options.expansions.includes("CODEX THREE") &&
-      !options.expansions.includes("THUNDERS EDGE")
-    ) {
-      resources += planet.resources + planet.influence;
-      influence += planet.resources + planet.influence;
-    } else {
-      resources += planet.resources;
-      influence += planet.influence;
-    }
-    let hasSkip = false;
-    for (const attribute of planet.attributes) {
-      if (attribute.endsWith("skip")) {
-        hasSkip = true;
-      }
-      if (attribute === "legendary") {
-        ++legendary;
-      }
-    }
-    if (hasSkip) {
-      ++techSkips;
-    }
-    for (const type of planet.types) {
-      switch (type) {
-        case "CULTURAL":
-          ++cultural;
-          break;
-        case "INDUSTRIAL":
-          ++industrial;
-          break;
-        case "HAZARDOUS":
-          ++hazardous;
-          break;
-      }
-    }
-    if ((planet.attachments ?? []).length > 0) {
-      ++attachments;
-    }
-  }
+    !options.expansions.includes("THUNDERS EDGE");
+
+  const {
+    numPlanets,
+    resources,
+    influence,
+    cultural,
+    hazardous,
+    industrial,
+    legendary,
+    techSkips,
+    attachments,
+  } = computePlanetSummaryValues(
+    planets,
+    hasXxchaHeroResources,
+    countExhaustedValues,
+  );
 
   return (
     <div className={styles.PlanetSummary}>

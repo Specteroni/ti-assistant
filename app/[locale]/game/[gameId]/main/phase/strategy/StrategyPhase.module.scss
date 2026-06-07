@@ -21,6 +21,14 @@
   min-height: calc(100dvh - 6.5rem);
 }
 
+@media only screen and (max-width: 68.75rem) {
+  .MainColumn {
+    justify-content: flex-start;
+    min-height: auto;
+    padding-bottom: 13rem;
+  }
+}
+
 @media only screen and (max-width: 56.25rem) {
   .LeftColumn {
     height: calc(100svh - 15rem);
@@ -29,6 +37,7 @@
   .MainColumn {
     height: fit-content;
     margin-top: 0;
+    padding-bottom: 13rem;
   }
 }
 
@@ -38,6 +47,7 @@
   }
 
   .MainColumn {
+    padding-bottom: 5rem;
     padding-top: 3rem;
   }
 }

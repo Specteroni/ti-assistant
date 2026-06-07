@@ -17,9 +17,16 @@ const {
 const {
   AdvancePhaseHandler,
 } = require("../src/util/model/advancePhase.ts");
+const { CastVotesHandler } = require("../src/util/model/castVotes.ts");
 const {
   computeRemainingVotes,
 } = require("../src/components/VoteBlock/VoteBlock.tsx");
+const {
+  computePlanetSummaryValues,
+} = require("../src/util/planetSummary.ts");
+const { canExhaustPlanet } = require("../src/util/planets.ts");
+const { getOppositeHandler } = require("../src/util/api/opposite.ts");
+const { updateActionLog } = require("../src/util/api/update.ts");
 
 function baseGame(overrides = {}) {
   return {
@@ -167,6 +174,145 @@ test("planet vote adjustment adds when exhausting and subtracts when readying", 
   assert.equal(getVotesAfterPlanetStateChange(2, 5, "READIED"), 0);
   assert.equal(getVotesAfterPlanetStateChange(4, 0, "EXHAUSTED"), 4);
   assert.equal(getVotesAfterPlanetStateChange(4, 3, "PURGED"), 4);
+});
+
+test("undoing a planet-driven vote adjustment restores votes and planet state", () => {
+  const gameData = baseGame({
+    actionLog: [
+      {
+        timestampMillis: 3,
+        gameSeconds: 0,
+        data: Events.CastVotesEvent("Embers of Muaat", 8, 0, "For", {
+          planetStateChange: {
+            planet: "Arinam",
+            state: "EXHAUSTED",
+            prevState: "READIED",
+          },
+        }),
+      },
+      {
+        timestampMillis: 2,
+        gameSeconds: 0,
+        data: Events.UpdatePlanetStateEvent("Arinam", "EXHAUSTED"),
+      },
+    ],
+    planets: {
+      Arinam: {
+        id: "Arinam",
+        owner: "Embers of Muaat",
+        influence: 2,
+        resources: 1,
+        attributes: [],
+        types: [],
+        state: "EXHAUSTED",
+      },
+    },
+  });
+
+  gameData.actionLog[0].data.event.prevVotes = 6;
+  gameData.actionLog[0].data.event.prevExtraVotes = 0;
+  gameData.actionLog[0].data.event.prevTarget = "For";
+  gameData.actionLog[1].data.event.prevState = "READIED";
+
+  const handler = getOppositeHandler(gameData, gameData.actionLog[0].data);
+  updateGameData(gameData, handler.getUpdates());
+  updateActionLog(gameData, handler, 4, 0);
+
+  assert.equal(gameData.planets.Arinam.state, "READIED");
+  assert.equal(gameData.actionLog.length, 1);
+  assert.deepEqual(gameData.actionLog[0].data, {
+    action: "CAST_VOTES",
+    event: {
+      faction: "Embers of Muaat",
+      votes: 6,
+      extraVotes: 0,
+      target: "For",
+    },
+  });
+});
+
+test("replacing a log entry moves it to the front like Firestore ordering", () => {
+  const gameData = baseGame({
+    actionLog: [
+      {
+        timestampMillis: 3,
+        gameSeconds: 0,
+        data: Events.UpdatePlanetStateEvent("Arinam", "EXHAUSTED"),
+      },
+      {
+        timestampMillis: 2,
+        gameSeconds: 0,
+        data: Events.CastVotesEvent("Embers of Muaat", 6, 0, "For"),
+      },
+    ],
+  });
+
+  const handler = new CastVotesHandler(
+    gameData,
+    Events.CastVotesEvent("Embers of Muaat", 8, 0, "For"),
+  );
+
+  updateActionLog(gameData, handler, 4, 0);
+
+  assert.equal(gameData.actionLog[0].timestampMillis, 4);
+  assert.equal(gameData.actionLog[0].data.action, "CAST_VOTES");
+});
+
+test("space station planets can be exhausted", () => {
+  assert.equal(
+    canExhaustPlanet({
+      id: "Tsion Station",
+      name: "Tsion Station",
+      owner: "Embers of Muaat",
+      influence: 1,
+      resources: 1,
+      attributes: ["space-station"],
+      types: [],
+      state: "READIED",
+    }),
+    true,
+  );
+});
+
+test("exhausted planets remain counted in summaries but lose values", () => {
+  const planets = [
+    {
+      id: "Primor",
+      name: "Primor",
+      owner: "Embers of Muaat",
+      resources: 2,
+      influence: 1,
+      attributes: ["legendary", "green-skip"],
+      types: ["CULTURAL"],
+      attachments: ["Demilitarized Zone"],
+      state: "EXHAUSTED",
+    },
+    {
+      id: "Arinam",
+      name: "Arinam",
+      owner: "Embers of Muaat",
+      resources: 1,
+      influence: 2,
+      attributes: [],
+      types: ["INDUSTRIAL"],
+      state: "READIED",
+    },
+  ];
+
+  const summary = computePlanetSummaryValues(planets, false);
+
+  assert.equal(summary.numPlanets, 2);
+  assert.equal(summary.cultural, 1);
+  assert.equal(summary.industrial, 1);
+  assert.equal(summary.legendary, 1);
+  assert.equal(summary.techSkips, 1);
+  assert.equal(summary.attachments, 1);
+  assert.equal(summary.resources, 1);
+  assert.equal(summary.influence, 2);
+
+  const totalSummary = computePlanetSummaryValues(planets, false, true);
+  assert.equal(totalSummary.resources, 3);
+  assert.equal(totalSummary.influence, 3);
 });
 
 test("exhausted and purged planets do not contribute remaining agenda votes", () => {

@@ -300,6 +300,21 @@ export function getOppositeHandler(
       return new RevealAgendaHandler(gameData, revealData);
     }
     case "CAST_VOTES": {
+      if (data.event.planetStateChange) {
+        const voteData: CastVotesData = {
+          action: "CAST_VOTES",
+          event: {
+            faction: data.event.faction,
+            target: data.event.prevTarget,
+            votes: data.event.prevVotes ?? 0,
+            extraVotes: data.event.prevExtraVotes ?? 0,
+            planetStateChange: data.event.planetStateChange,
+            undoPlanetStateChange: true,
+          },
+        };
+        return new CastVotesHandler(gameData, voteData);
+      }
+
       const voteData: CastVotesData = {
         action: "CAST_VOTES",
         event: {

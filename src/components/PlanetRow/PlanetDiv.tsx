@@ -133,6 +133,7 @@ export default function PlanetDiv({ planet }: { planet: Planet }) {
             height: "100%",
             justifyContent: "center",
             alignItems: "center",
+            position: "relative",
             zIndex: 2,
           }}
         >

@@ -36,7 +36,8 @@ export function updateActionLog(
         const entry = handler.getLogEntry();
         entry.timestampMillis = timestamp;
         entry.gameSeconds = gameTime;
-        actionLog.splice(i, 1, entry);
+        actionLog.splice(i, 1);
+        actionLog.unshift(entry);
         return;
       case "REWIND_AND_DELETE":
         for (let j = 0; j < i; ++j) {

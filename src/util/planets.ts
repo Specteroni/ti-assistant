@@ -79,6 +79,16 @@ export function applyPlanetAttachments(
   return updatedPlanet;
 }
 
+export function canExhaustPlanet(planet: Planet) {
+  if (!planet.owner || planet.state === "PURGED") {
+    return false;
+  }
+  return (
+    !planet.attributes.includes("ocean") &&
+    !planet.attributes.includes("synthetic")
+  );
+}
+
 export function getPlanetTypeColor(type: Optional<PlanetType>) {
   if (!type) {
     return "var(--hidden-border)";

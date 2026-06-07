@@ -23,7 +23,7 @@ import { SelectableRow } from "../../SelectableRow";
 import { getFactionVotes } from "../../util/actionLog";
 import { useDataUpdate } from "../../util/api/dataUpdate";
 import { Events } from "../../util/api/events";
-import { applyPlanetAttachments } from "../../util/planets";
+import { applyPlanetAttachments, canExhaustPlanet } from "../../util/planets";
 import { Optional } from "../../util/types/types";
 import { rem } from "../../util/util";
 import { getVotesAfterPlanetStateChange } from "../../util/votes";
@@ -35,6 +35,7 @@ import TechPlanetIcon from "../PlanetIcons/TechPlanetIcon";
 import ResourcesIcon from "../ResourcesIcon/ResourcesIcon";
 import Toggle from "../Toggle/Toggle";
 import UnitIcon from "../Units/Icons";
+import CommodityValueIcon from "../PlanetIcons/CommodityValueIcon";
 
 interface PlanetRowOpts {
   hideAttachButton?: boolean;
@@ -102,6 +103,13 @@ export function usePlanetExhaustion(planet: Planet) {
         updatedVotes,
         factionVotes.extraVotes,
         factionVotes.target,
+        {
+          planetStateChange: {
+            planet: planet.id,
+            state: nextState,
+            prevState: planet.state ?? "READIED",
+          },
+        },
       ),
     );
   }
@@ -113,14 +121,7 @@ export function usePlanetExhaustion(planet: Planet) {
 }
 
 export function canTogglePlanetExhaustion(planet: Planet) {
-  if (!planet.owner || planet.state === "PURGED") {
-    return false;
-  }
-  return (
-    !planet.attributes.includes("ocean") &&
-    !planet.attributes.includes("space-station") &&
-    !planet.attributes.includes("synthetic")
-  );
+  return canExhaustPlanet(planet);
 }
 
 export default function PlanetRow({
@@ -276,11 +277,15 @@ export default function PlanetRow({
             flexBasis: "50%",
             alignItems: "center",
             isolation: "isolate",
+            minWidth: 0,
           }}
         >
           <div
             style={{
               fontFamily: "var(--main-font)",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
             }}
           >
             {planet.name}
@@ -304,48 +309,65 @@ export default function PlanetRow({
           </div>
         </div>
         {showSpaceDockToggle() ? (
-          <Toggle
-            selected={!!planet.spaceDock}
-            toggleFn={(prevValue) =>
-              dataUpdate(
-                Events.ToggleStructureEvent(
-                  planet.id,
-                  "Space Dock",
-                  prevValue ? "Remove" : "Add",
-                ),
-              )
-            }
-            disabled={viewOnly}
+          <div
+            style={{
+              display: "flex",
+              flexShrink: 0,
+              justifyContent: "center",
+              width: rem(40),
+            }}
           >
-            <UnitIcon type="Space Dock" size={14} />
-          </Toggle>
+            <Toggle
+              selected={!!planet.spaceDock}
+              toggleFn={(prevValue) =>
+                dataUpdate(
+                  Events.ToggleStructureEvent(
+                    planet.id,
+                    "Space Dock",
+                    prevValue ? "Remove" : "Add",
+                  ),
+                )
+              }
+              disabled={viewOnly}
+            >
+              <UnitIcon type="Space Dock" size={14} />
+            </Toggle>
+          </div>
         ) : null}
         {showPlanetStateToggle() ? (
-          <Toggle
-            compact
-            selected={planetExhaustion.exhausted}
-            toggleFn={planetExhaustion.toggle}
-            disabled={viewOnly}
-            style={{ marginLeft: rem(2) }}
+          <div
+            style={{
+              display: "flex",
+              flexShrink: 0,
+              justifyContent: "center",
+              width: rem(36),
+            }}
           >
-            <span
-              style={{
-                display: "flex",
-                width: rem(10.5),
-                height: rem(10.5),
-              }}
+            <Toggle
+              compact
+              selected={planetExhaustion.exhausted}
+              toggleFn={planetExhaustion.toggle}
+              disabled={viewOnly}
             >
-              <FlipSVG />
-            </span>
-          </Toggle>
+              <span
+                style={{
+                  display: "flex",
+                  width: rem(10.5),
+                  height: rem(10.5),
+                }}
+              >
+                <FlipSVG />
+              </span>
+            </Toggle>
+          </div>
         ) : null}
         {!opts.showAttachButton ? (
           <div
             className="flexRow"
             style={{
-              width: showSpaceDockToggle() ? "fit-content" : rem(40),
-              paddingLeft: showSpaceDockToggle() ? rem(2) : undefined,
-              paddingRight: rem(6),
+              flexShrink: 0,
+              justifyContent: "center",
+              width: rem(24),
             }}
           >
             {canAttach() ? (
@@ -368,7 +390,14 @@ export default function PlanetRow({
             ) : null}
           </div>
         ) : null}
-        <div style={{ flexShrink: 0 }}>
+        <div
+          style={{
+            flexShrink: 0,
+            width: rem(62),
+            display: "flex",
+            justifyContent: "center",
+          }}
+        >
           <ResourcesIcon
             resources={planet.resources}
             influence={planet.influence}
@@ -430,6 +459,8 @@ export function getAttributeIcon(
       return <TechPlanetIcon techType="BLUE" />;
     case "green-skip":
       return <TechPlanetIcon techType="GREEN" />;
+    case "space-station":
+      return <CommodityValueIcon />;
     case "demilitarized":
       return <DemilitarizedZoneSVG />;
     case "tomb":

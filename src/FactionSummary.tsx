@@ -39,9 +39,13 @@ import { objectEntries, rem } from "./util/util";
 
 interface FactionSummaryProps {
   factionId: FactionId;
+  countExhaustedPlanetValues?: boolean;
 }
 
-export function FactionSummary({ factionId }: FactionSummaryProps) {
+export function FactionSummary({
+  factionId,
+  countExhaustedPlanetValues = true,
+}: FactionSummaryProps) {
   const { settings } = use(SettingsContext);
 
   return (
@@ -52,14 +56,17 @@ export function FactionSummary({ factionId }: FactionSummaryProps) {
       <FactionSummarySection
         factionId={factionId}
         section={settings["fs-left"]}
+        countExhaustedPlanetValues={countExhaustedPlanetValues}
       />
       <FactionSummarySection
         factionId={factionId}
         section={settings["fs-center"]}
+        countExhaustedPlanetValues={countExhaustedPlanetValues}
       />
       <FactionSummarySection
         factionId={factionId}
         section={settings["fs-right"]}
+        countExhaustedPlanetValues={countExhaustedPlanetValues}
       />
       <Conditional appSection="COMMAND_COUNTERS">
         <FactionCCSummary factionId={factionId} />
@@ -71,9 +78,11 @@ export function FactionSummary({ factionId }: FactionSummaryProps) {
 function FactionSummarySection({
   factionId,
   section,
+  countExhaustedPlanetValues,
 }: {
   factionId: FactionId;
   section: SummarySection;
+  countExhaustedPlanetValues: boolean;
 }) {
   switch (section) {
     case "NONE":
@@ -83,7 +92,12 @@ function FactionSummarySection({
     case "TECHS":
       return <FactionTechSummary factionId={factionId} />;
     case "PLANETS":
-      return <FactionPlanetSummary factionId={factionId} />;
+      return (
+        <FactionPlanetSummary
+          factionId={factionId}
+          countExhaustedValues={countExhaustedPlanetValues}
+        />
+      );
     case "TIMER":
       return (
         <StaticFactionTimer factionId={factionId} active={false} width={84} />
@@ -330,7 +344,13 @@ function ObjectiveDots({ factionId }: { factionId: FactionId }) {
   );
 }
 
-function FactionPlanetSummary({ factionId }: { factionId: FactionId }) {
+function FactionPlanetSummary({
+  factionId,
+  countExhaustedValues,
+}: {
+  factionId: FactionId;
+  countExhaustedValues: boolean;
+}) {
   const attachments = useAttachments();
   const xxekirGrom = useLeader("Xxekir Grom");
   const options = useOptions();
@@ -353,6 +373,7 @@ function FactionPlanetSummary({ factionId }: { factionId: FactionId }) {
       factionId={factionId}
       planets={updatedPlanets}
       hasXxchaHero={hasXxchaHero}
+      countExhaustedValues={countExhaustedValues}
     />
   );
 }

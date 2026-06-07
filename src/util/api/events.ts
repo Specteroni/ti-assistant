@@ -144,6 +144,12 @@ function CastVotesEvent(
   votes: number,
   extraVotes: number,
   target?: string,
+  opts: Partial<
+    Pick<
+      CastVotesEvent,
+      "planetStateChange" | "undoPlanetStateChange"
+    >
+  > = {},
 ): CastVotesData {
   return {
     action: "CAST_VOTES",
@@ -152,6 +158,7 @@ function CastVotesEvent(
       votes,
       extraVotes,
       target,
+      ...opts,
     },
   };
 }
