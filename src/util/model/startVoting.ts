@@ -1,3 +1,5 @@
+import { getAgendaVotingOrder } from "../helpers";
+
 // Should only be used for non-component cards
 export class StartVotingHandler implements Handler {
   constructor(public gameData: StoredGameData, public data: StartVotingData) {}
@@ -7,10 +9,15 @@ export class StartVotingHandler implements Handler {
   }
 
   getUpdates(): Record<string, any> {
+    const firstVoter = getAgendaVotingOrder(
+      this.gameData.state,
+      this.gameData.factions
+    )[0];
     const updates: Record<string, any> = {
       [`state.paused`]: false,
       [`sequenceNum`]: "INCREMENT",
       [`state.votingStarted`]: true,
+      [`state.activeplayer`]: firstVoter?.id ?? "None",
     };
 
     return updates;
@@ -40,6 +47,7 @@ export class UnstartVotingHandler implements Handler {
       [`state.paused`]: false,
       [`sequenceNum`]: "INCREMENT",
       [`state.votingStarted`]: false,
+      [`state.activeplayer`]: "None",
     };
 
     return updates;

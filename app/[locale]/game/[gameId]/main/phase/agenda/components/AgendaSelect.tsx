@@ -1,25 +1,27 @@
 import { FormattedMessage } from "react-intl";
 import { AgendaRow } from "../../../../../../../../src/AgendaRow";
 import {
+  useActionLog,
   useAgendas,
-  useCurrentTurn,
   useViewOnly,
 } from "../../../../../../../../src/context/dataHooks";
 import { ClientOnlyHoverMenu } from "../../../../../../../../src/HoverMenu";
 import { getActiveAgenda } from "../../../../../../../../src/util/actionLog";
+import { getCurrentAgendaLogEntries } from "../../../../../../../../src/util/api/actionLog";
 import { useDataUpdate } from "../../../../../../../../src/util/api/dataUpdate";
 import { Events } from "../../../../../../../../src/util/api/events";
 import { Optional } from "../../../../../../../../src/util/types/types";
 import { rem } from "../../../../../../../../src/util/util";
 
 export default function AgendaSelect({ fontSize }: { fontSize?: string }) {
+  const actionLog = useActionLog();
   const agendas = useAgendas();
-  const currentTurn = useCurrentTurn();
   const dataUpdate = useDataUpdate();
   const viewOnly = useViewOnly();
 
   let currentAgenda: Optional<Agenda>;
-  const activeAgenda = getActiveAgenda(currentTurn);
+  const currentAgendaLog = getCurrentAgendaLogEntries(actionLog);
+  const activeAgenda = getActiveAgenda(currentAgendaLog);
 
   if (activeAgenda) {
     currentAgenda = agendas[activeAgenda];

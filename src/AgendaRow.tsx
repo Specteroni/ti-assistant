@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import FormattedDescription from "./components/FormattedDescription/FormattedDescription";
 import { useOutcome } from "./context/agendaDataHooks";
@@ -6,6 +7,87 @@ import { InfoRow } from "./InfoRow";
 import { SelectableRow } from "./SelectableRow";
 import { agendaTypeString, outcomeString } from "./util/strings";
 import { rem } from "./util/util";
+
+interface AgendaReferenceProps {
+  agenda: Agenda;
+  compact?: boolean;
+  style?: CSSProperties;
+}
+
+export function AgendaReference({
+  agenda,
+  compact,
+  style,
+}: AgendaReferenceProps) {
+  const intl = useIntl();
+
+  return (
+    <div
+      className="flexColumn"
+      style={{
+        alignItems: "stretch",
+        boxSizing: "border-box",
+        gap: rem(6),
+        padding: compact ? `${rem(6)} ${rem(10)}` : rem(8),
+        width: "100%",
+        ...style,
+      }}
+    >
+      <div
+        className="flexRow"
+        style={{
+          alignItems: "baseline",
+          flexWrap: "wrap",
+          gap: rem(8),
+          justifyContent: "space-between",
+          width: "100%",
+        }}
+      >
+        <div
+          style={{
+            fontFamily: "var(--main-font)",
+            fontSize: compact ? rem(20) : rem(24),
+          }}
+        >
+          {agenda.name}
+        </div>
+        <div
+          style={{
+            fontSize: compact ? rem(14) : rem(18),
+            opacity: 0.75,
+          }}
+        >
+          [{agendaTypeString(agenda.type, intl)}]
+        </div>
+      </div>
+      {agenda.elect !== "For/Against" ? (
+        <div
+          style={{
+            fontFamily: "var(--main-font)",
+            fontSize: compact ? rem(15) : rem(18),
+          }}
+        >
+          <FormattedMessage
+            id="EAsvAe"
+            defaultMessage="Elect {outcomeType}"
+            description="Text explaining what players should be voting for."
+            values={{ outcomeType: outcomeString(agenda.elect, intl) }}
+          />
+        </div>
+      ) : null}
+      <div
+        style={{
+          fontSize: compact ? rem(15) : rem(18),
+          lineHeight: 1.25,
+          textAlign: "left",
+          whiteSpace: "pre-line",
+        }}
+      >
+        <FormattedDescription description={agenda.description} />
+      </div>
+    </div>
+  );
+}
 
 function InfoContent({ agenda }: { agenda: Agenda }) {
   const intl = useIntl();

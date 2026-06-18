@@ -23,6 +23,24 @@
   gap: 0.5rem;
 }
 
+.ResourceLabelWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
+}
+
+.ResourceLabel {
+  @include main-font;
+
+  color: var(--muted-text-color);
+  font-size: 0.75rem;
+  line-height: 0.75rem;
+  user-select: none;
+  white-space: nowrap;
+}
+
 .PlanetTotal {
   @include main-font;
 

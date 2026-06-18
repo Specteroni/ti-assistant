@@ -68,11 +68,9 @@ export default function FactionActionPhase({
           primaryOnly={true}
         />
       </div>
-      {selectedAction ? (
-        <div className="flexRow" style={{ width: "100%" }}>
-          <NextPlayerButtons activeFactionId={factionId} />
-        </div>
-      ) : null}
+      <div className="flexRow" style={{ width: "100%" }}>
+        <NextPlayerButtons activeFactionId={factionId} />
+      </div>
     </>
   );
 }

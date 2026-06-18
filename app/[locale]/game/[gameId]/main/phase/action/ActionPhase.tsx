@@ -224,27 +224,15 @@ export function FactionActionButtons({ factionId }: FactionActionButtonsProps) {
         );
       })}
       <Chip
-        selected={selectedAction === "Tactical"}
+        selected={!selectedAction || selectedAction === "Tactical"}
         fontSize={18}
         toggleFn={() => toggleAction("Tactical")}
         disabled={viewOnly}
       >
         <FormattedMessage
           id="/KXhGz"
-          description="Text on a button that will select a tactical action."
-          defaultMessage="Tactical"
-        />
-      </Chip>
-      <Chip
-        selected={selectedAction === "Component"}
-        fontSize={18}
-        toggleFn={() => toggleAction("Component")}
-        disabled={viewOnly}
-      >
-        <FormattedMessage
-          id="43UU69"
-          description="Text on a button that will select a component action."
-          defaultMessage="Component"
+          description="Text on a button that will select a normal action."
+          defaultMessage="Action"
         />
       </Chip>
       {canFactionPass(factionId) ? (
@@ -377,7 +365,7 @@ export function AdditionalActions({
     return objectiveObj.phase === "ACTION";
   });
 
-  const selectedAction = getSelectedActionFromLog(currentTurn);
+  const selectedAction = getSelectedActionFromLog(currentTurn) ?? "Tactical";
 
   switch (selectedAction) {
     case "Technology":
@@ -1553,27 +1541,6 @@ export function NextPlayerButtons({
   const selectedAction = useSelectedAction();
   const viewOnly = useViewOnly();
 
-  if (!selectedAction) {
-    return (
-      <div className="flexColumn">
-        <div className="flexRow" style={{ gap: rem(8) }}>
-          <button
-            onClick={() => dataUpdate(Events.EndTurnEvent({ skipTurn: true }))}
-            className={`${styles.EndTurnButton} outline`}
-            disabled={viewOnly}
-            style={{ fontSize: "1rem" }}
-          >
-            <FormattedMessage
-              id="EfG8OO"
-              description="Text on a button that will skip a player's turn."
-              defaultMessage="Skip Turn"
-            />
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   if (selectedAction === "Politics" && !newSpeaker) {
     return null;
   }
@@ -1592,31 +1559,6 @@ export function NextPlayerButtons({
             defaultMessage="End Turn"
           />
         </button>
-        {selectedAction !== "Pass" ? (
-          <React.Fragment>
-            <div style={{ fontSize: rem(16) }}>
-              <FormattedMessage
-                id="PnNSxg"
-                description="Text between two fields linking them together."
-                defaultMessage="OR"
-              />
-            </div>
-            <button
-              onClick={() =>
-                dataUpdate(Events.EndTurnEvent({ samePlayer: true }))
-              }
-              className={`${styles.EndTurnButton} outline`}
-              style={{ fontSize: rem(16) }}
-              disabled={viewOnly}
-            >
-              <FormattedMessage
-                id="5ChhqO"
-                description="Text on a button that will let the player take another action."
-                defaultMessage="Take Another Action"
-              />
-            </button>
-          </React.Fragment>
-        ) : null}
       </div>
       <PuppetsOnAString activeFactionId={activeFactionId} />
     </div>

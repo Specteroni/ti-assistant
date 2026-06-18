@@ -32,6 +32,7 @@ export class ResolveAgendaHandler implements Handler {
       [`state.paused`]: false,
       [`sequenceNum`]: "INCREMENT",
       [`state.votingStarted`]: false,
+      [`state.activeplayer`]: "None",
       [`agendas.${this.data.event.agenda}.passed`]:
         this.data.event.target !== "Against",
       [`agendas.${this.data.event.agenda}.resolved`]: true,

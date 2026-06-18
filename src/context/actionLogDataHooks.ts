@@ -1,5 +1,8 @@
 import { getActiveAgenda } from "../util/actionLog";
-import { getCurrentTurnLogEntries } from "../util/api/actionLog";
+import {
+  getCurrentAgendaLogEntries,
+  getCurrentTurnLogEntries,
+} from "../util/api/actionLog";
 import {
   getNewSpeakerEventFromLog,
   getSelectedActionFromLog,
@@ -11,7 +14,7 @@ export function useCurrentAgenda() {
   return useMemoizedGameDataValue<ActionLog, Optional<AgendaId>>(
     "actionLog",
     undefined,
-    (log) => getActiveAgenda(getCurrentTurnLogEntries(log)),
+    (log) => getActiveAgenda(getCurrentAgendaLogEntries(log)),
   );
 }
 

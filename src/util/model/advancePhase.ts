@@ -199,6 +199,7 @@ export class AdvancePhaseHandler implements Handler {
           updates[`state.phase`] = nextPhase;
           updates[`state.agendaNum`] = 1;
           updates[`state.agendaUnlocked`] = true;
+          updates[`state.activeplayer`] = "None";
         }
         break;
       }

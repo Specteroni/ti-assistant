@@ -1,7 +1,7 @@
 import { FormattedMessage } from "react-intl";
 import FactionSelectRadialMenu from "../../../../../../../../src/components/FactionSelectRadialMenu/FactionSelectRadialMenu";
 import {
-  useCurrentTurn,
+  useActionLog,
   useGameId,
   useViewOnly,
 } from "../../../../../../../../src/context/dataHooks";
@@ -12,31 +12,33 @@ import {
   getActionCardTargets,
   getActiveAgenda,
 } from "../../../../../../../../src/util/actionLog";
+import { getCurrentAgendaLogEntries } from "../../../../../../../../src/util/api/actionLog";
 import { useDataUpdate } from "../../../../../../../../src/util/api/dataUpdate";
 import { Events } from "../../../../../../../../src/util/api/events";
 import { rem } from "../../../../../../../../src/util/util";
 
 export default function AfterAnAgendaIsRevealed() {
-  const currentTurn = useCurrentTurn();
+  const actionLog = useActionLog();
   const dataUpdate = useDataUpdate();
   const mapOrderedFactionIds = useOrderedFactionIds("MAP");
   const gameId = useGameId();
   const state = useGameState();
   const viewOnly = useViewOnly();
 
-  const currentAgenda = getActiveAgenda(currentTurn);
+  const currentAgendaLog = getCurrentAgendaLogEntries(actionLog);
+  const currentAgenda = getActiveAgenda(currentAgendaLog);
 
   if (!currentAgenda || state.votingStarted) {
     return null;
   }
 
   let assassinatedRep = getActionCardTargets(
-    currentTurn,
+    currentAgendaLog,
     "Assassinate Representative",
   )[0];
   assassinatedRep = assassinatedRep === "None" ? undefined : assassinatedRep;
   const electionHacked =
-    getActionCardTargets(currentTurn, "Hack Election").length > 0;
+    getActionCardTargets(currentAgendaLog, "Hack Election").length > 0;
 
   return (
     <ClientOnlyHoverMenu

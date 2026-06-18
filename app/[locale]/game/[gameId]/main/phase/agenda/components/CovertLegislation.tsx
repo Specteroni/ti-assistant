@@ -4,8 +4,8 @@ import LabeledDiv from "../../../../../../../../src/components/LabeledDiv/Labele
 import { Selector } from "../../../../../../../../src/components/Selector/Selector";
 import { useCurrentAgenda } from "../../../../../../../../src/context/actionLogDataHooks";
 import {
+  useActionLog,
   useAgendas,
-  useCurrentTurn,
   useViewOnly,
 } from "../../../../../../../../src/context/dataHooks";
 import { useNumFactions } from "../../../../../../../../src/context/factionDataHooks";
@@ -17,8 +17,9 @@ import {
 } from "../../../../../../../../src/util/actionLog";
 import { useDataUpdate } from "../../../../../../../../src/util/api/dataUpdate";
 import { Events } from "../../../../../../../../src/util/api/events";
+import { computeVotes } from "../../../../../../../../src/util/agendaVotes";
+import { getCurrentAgendaLogEntries } from "../../../../../../../../src/util/api/actionLog";
 import { outcomeString } from "../../../../../../../../src/util/strings";
-import { computeVotes } from "../AgendaPhase";
 
 const CovertLegislation = {
   RevealOutcomes,
@@ -28,9 +29,10 @@ const CovertLegislation = {
 export default CovertLegislation;
 
 function RevealOutcomes() {
+  const actionLog = useActionLog();
   const agendas = useAgendas();
   const currentAgenda = useCurrentAgenda();
-  const currentTurn = useCurrentTurn();
+  const currentAgendaLog = getCurrentAgendaLogEntries(actionLog);
   const dataUpdate = useDataUpdate();
   const intl = useIntl();
   const viewOnly = useViewOnly();
@@ -44,7 +46,7 @@ function RevealOutcomes() {
     if (agenda.target || agenda.elect === "???") return;
     outcomes.add(agenda.elect);
   });
-  const eligibleOutcomes = getSelectedEligibleOutcomes(currentTurn);
+  const eligibleOutcomes = getSelectedEligibleOutcomes(currentAgendaLog);
 
   return (
     <Selector
@@ -80,13 +82,14 @@ function RevealOutcomes() {
 }
 
 function RevealAgenda() {
+  const actionLog = useActionLog();
   const agendas = useAgendas();
-  const currentTurn = useCurrentTurn();
+  const currentAgendaLog = getCurrentAgendaLogEntries(actionLog);
   const dataUpdate = useDataUpdate();
   const numFactions = useNumFactions();
   const viewOnly = useViewOnly();
 
-  const activeAgenda = getActiveAgenda(currentTurn);
+  const activeAgenda = getActiveAgenda(currentAgendaLog);
 
   if (activeAgenda !== "Covert Legislation") {
     return null;
@@ -98,7 +101,7 @@ function RevealAgenda() {
 
   const votes = computeVotes(
     currentAgenda,
-    currentTurn,
+    currentAgendaLog,
     numFactions,
     !!representativeGovernmentPassed,
   );
@@ -114,17 +117,17 @@ function RevealAgenda() {
     });
 
   if (selectedTargets.length !== 1) {
-    const speakerTieBreak = getSpeakerTieBreak(currentTurn);
+    const speakerTieBreak = getSpeakerTieBreak(currentAgendaLog);
     if (!speakerTieBreak) {
       return null;
     }
   }
 
-  const eligibleOutcomes = getSelectedEligibleOutcomes(currentTurn);
+  const eligibleOutcomes = getSelectedEligibleOutcomes(currentAgendaLog);
   const possibleSubAgendas = Object.values(agendas ?? {}).filter(
     (agenda) => agenda.elect === eligibleOutcomes,
   );
-  const selectedSubAgenda = getSelectedSubAgenda(currentTurn);
+  const selectedSubAgenda = getSelectedSubAgenda(currentAgendaLog);
   const subAgenda = selectedSubAgenda ? agendas[selectedSubAgenda] : undefined;
 
   return (

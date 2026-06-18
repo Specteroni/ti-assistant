@@ -29,6 +29,7 @@ import {
   getPromissoryTargets,
 } from "../../util/actionLog";
 import {
+  getCurrentAgendaLogEntries,
   getCurrentPhaseLogEntries,
   getCurrentPhasePreviousLogEntries,
   getCurrentTurnLogEntries,
@@ -504,12 +505,16 @@ interface VoteBlockProps {
   factionId: FactionId;
   agenda: Optional<Agenda>;
   manualVotes?: boolean;
+  hideVotes?: boolean;
+  activeVote?: boolean;
 }
 
 export default function VoteBlock({
   factionId,
   agenda,
   manualVotes,
+  hideVotes,
+  activeVote,
 }: VoteBlockProps) {
   const actionLog = useActionLog();
   const agendas = useAgendas();
@@ -533,8 +538,10 @@ export default function VoteBlock({
   }
 
   const currentTurn = getCurrentTurnLogEntries(actionLog);
+  const currentAgendaLog = getCurrentAgendaLogEntries(actionLog);
+  const agendaLog = state.phase === "AGENDA" ? currentAgendaLog : currentTurn;
 
-  const completeRiders = getPlayedRiders(currentTurn).filter((rider) => {
+  const completeRiders = getPlayedRiders(agendaLog).filter((rider) => {
     return rider.faction === faction.id && rider.outcome;
   });
 
@@ -621,7 +628,7 @@ export default function VoteBlock({
           />
         ) : null}
         {agenda && state.votingStarted ? (
-          !canFactionVote(faction, agendas, state, currentTurn, leaders) &&
+          !canFactionVote(faction, agendas, state, agendaLog, leaders) &&
           !overrideVotingBlock ? (
             <div
               className="flexRow"
@@ -654,6 +661,8 @@ export default function VoteBlock({
               factionId={factionId}
               agenda={agenda}
               manualVotes={manualVotes}
+              hideVotes={hideVotes}
+              activeVote={activeVote}
             />
           )
         ) : null}
@@ -811,10 +820,14 @@ function VotingSection({
   factionId,
   agenda,
   manualVotes,
+  hideVotes,
+  activeVote,
 }: {
   factionId: FactionId;
   agenda: Optional<Agenda>;
   manualVotes?: boolean;
+  hideVotes?: boolean;
+  activeVote?: boolean;
 }) {
   const actionLog = useActionLog();
   const agendas = useAgendas();
@@ -835,6 +848,8 @@ function VotingSection({
   const intl = useIntl();
 
   const currentTurn = getCurrentTurnLogEntries(actionLog);
+  const currentAgendaLog = getCurrentAgendaLogEntries(actionLog);
+  const agendaLog = state.phase === "AGENDA" ? currentAgendaLog : currentTurn;
   const currentPhase = getCurrentPhaseLogEntries(actionLog);
 
   const representativeGovernmentPassed =
@@ -875,10 +890,33 @@ function VotingSection({
     options,
     intl,
   );
-  const factionVotes = getFactionVotes(currentTurn, factionId);
+  const factionVotes = getFactionVotes(agendaLog, factionId);
 
   const hasVotableTarget =
     !!factionVotes?.target && factionVotes?.target !== "Abstain";
+
+  if (hideVotes) {
+    return (
+      <>
+        <div className="flexRow" style={{ justifyContent: "flex-start" }}>
+          {activeVote ? (
+            <FormattedMessage
+              id="Agenda.Voting.InProgress"
+              defaultMessage="Voting..."
+              description="Placeholder shown while the active player is voting on an agenda."
+            />
+          ) : (
+            <FormattedMessage
+              id="Agenda.Voting.Pending"
+              defaultMessage="Pending"
+              description="Placeholder shown before a player's agenda voting turn."
+            />
+          )}
+        </div>
+        <AvailableVotes factionId={factionId} manual={manualVotes} />
+      </>
+    );
+  }
 
   let { influence } = computeRemainingVotes(
     factionId,
@@ -905,20 +943,20 @@ function VotingSection({
   }
   let castExtraVotes = factionVotes?.extraVotes ?? 0;
   const usingPredictive = getActionCardTargets(
-    currentTurn,
+    agendaLog,
     "Predictive Intelligence",
   ) as FactionId[];
   const currentCouncilor = getActionCardTargets(
-    currentTurn,
+    agendaLog,
     "Distinguished Councilor",
   )[0] as Optional<FactionId>;
   // Technically not an action card, but easiest to use as this.
   const councilPreservePlayer = getActionCardTargets(
-    currentTurn,
+    agendaLog,
     "Council Preserve",
   )[0] as Optional<FactionId>;
   const bloodPactUser = getPromissoryTargets(
-    currentTurn,
+    agendaLog,
     "Blood Pact",
   )[0] as Optional<FactionId>;
   if (factionId === bloodPactUser) {
@@ -1002,7 +1040,7 @@ function VotingSection({
                   factionVotes.votes > 0 ? Object.keys(factions).length : 0
                 } votes from Zeal`
               : null}
-            {canUseBloodPact(currentTurn, factionId) ? (
+            {canUseBloodPact(agendaLog, factionId) ? (
               <Toggle
                 selected={bloodPactUser === factionId}
                 toggleFn={() => {

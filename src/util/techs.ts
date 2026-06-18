@@ -141,6 +141,9 @@ export function getFactionPreReqs(
     if (planet.owner !== faction.id) {
       continue;
     }
+    if (planet.state === "EXHAUSTED" || planet.state === "PURGED") {
+      continue;
+    }
     for (const attribute of planet.attributes) {
       switch (attribute) {
         case "red-skip":

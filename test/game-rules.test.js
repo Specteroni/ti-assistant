@@ -2,7 +2,11 @@ const assert = require("node:assert/strict");
 
 const { updateGameData } = require("../src/util/api/handler.ts");
 const { Events } = require("../src/util/api/events.ts");
-const { canExhaustTech } = require("../src/util/techs.ts");
+const {
+  canExhaustTech,
+  canResearchTech,
+  getFactionPreReqs,
+} = require("../src/util/techs.ts");
 const { getVotesAfterPlanetStateChange } = require("../src/util/votes.ts");
 const {
   ClaimPlanetHandler,
@@ -15,12 +19,29 @@ const {
   UpdateTechStateHandler,
 } = require("../src/util/model/updateTechState.ts");
 const {
+  PlayActionCardHandler,
+} = require("../src/util/model/playActionCard.ts");
+const {
   AdvancePhaseHandler,
 } = require("../src/util/model/advancePhase.ts");
 const { CastVotesHandler } = require("../src/util/model/castVotes.ts");
+const { EndTurnHandler } = require("../src/util/model/endTurn.ts");
+const {
+  ResolveAgendaHandler,
+} = require("../src/util/model/resolveAgenda.ts");
+const { StartVotingHandler } = require("../src/util/model/startVoting.ts");
 const {
   computeRemainingVotes,
 } = require("../src/components/VoteBlock/VoteBlock.tsx");
+const {
+  computeVotes,
+} = require("../src/util/agendaVotes.ts");
+const {
+  getActiveAgenda,
+} = require("../src/util/actionLog.ts");
+const {
+  getCurrentAgendaLogEntries,
+} = require("../src/util/api/actionLog.ts");
 const {
   computePlanetSummaryValues,
 } = require("../src/util/planetSummary.ts");
@@ -274,6 +295,51 @@ test("space station planets can be exhausted", () => {
   );
 });
 
+test("Ancient Burial Sites exhausts the target player's cultural planets", () => {
+  const gameData = baseGame({
+    planets: {
+      Centauri: {
+        owner: "Xxcha Kingdom",
+        state: "READIED",
+      },
+      "Mecatol Rex": {
+        owner: "Xxcha Kingdom",
+        state: "READIED",
+      },
+    },
+  });
+
+  const handler = new PlayActionCardHandler(
+    gameData,
+    Events.PlayActionCardEvent("Ancient Burial Sites", "Xxcha Kingdom"),
+  );
+
+  const updates = handler.getUpdates();
+  assert.equal(updates["planets.Centauri.state"], "EXHAUSTED");
+  assert.equal(updates["planets.Mecatol Rex.state"], undefined);
+  assert.deepEqual(handler.data.event.prevPlanetStates, {
+    Centauri: "READIED",
+  });
+
+  const updatedGameData = applyUpdates(gameData, updates);
+  updatedGameData.actionLog = [
+    {
+      timestampMillis: 1,
+      data: handler.getLogEntry().data,
+    },
+  ];
+
+  const undoHandler = getOppositeHandler(
+    updatedGameData,
+    updatedGameData.actionLog[0].data,
+  );
+
+  assert.equal(
+    undoHandler.getUpdates()["planets.Centauri.state"],
+    "READIED",
+  );
+});
+
 test("exhausted planets remain counted in summaries but lose values", () => {
   const planets = [
     {
@@ -313,6 +379,16 @@ test("exhausted planets remain counted in summaries but lose values", () => {
   const totalSummary = computePlanetSummaryValues(planets, false, true);
   assert.equal(totalSummary.resources, 3);
   assert.equal(totalSummary.influence, 3);
+
+  const remainingPlanetCountSummary = computePlanetSummaryValues(
+    planets,
+    false,
+    false,
+    false,
+  );
+  assert.equal(remainingPlanetCountSummary.numPlanets, 1);
+  assert.equal(remainingPlanetCountSummary.cultural, 1);
+  assert.equal(remainingPlanetCountSummary.techSkips, 1);
 });
 
 test("exhausted and purged planets do not contribute remaining agenda votes", () => {
@@ -444,6 +520,82 @@ test("tech exhaustion is detected only for cards that say exhaust this card", ()
     false,
   );
   assert.equal(canExhaustTech(undefined), false);
+});
+
+test("exhausted tech-skip planets do not count toward tech prerequisites", () => {
+  const faction = {
+    id: "Embers of Muaat",
+    techs: {
+      "Gravity Drive": {},
+    },
+  };
+  const techs = {
+    "Gravity Drive": {
+      id: "Gravity Drive",
+      name: "Gravity Drive",
+      prereqs: ["BLUE"],
+      type: "BLUE",
+    },
+    "Fleet Logistics": {
+      id: "Fleet Logistics",
+      name: "Fleet Logistics",
+      prereqs: ["BLUE", "BLUE"],
+      type: "BLUE",
+    },
+  };
+  const options = {
+    expansions: [],
+  };
+  const planet = {
+    id: "Dal Bootha",
+    name: "Dal Bootha",
+    owner: "Embers of Muaat",
+    resources: 0,
+    influence: 2,
+    attributes: ["blue-skip"],
+    types: ["CULTURAL"],
+    state: "EXHAUSTED",
+  };
+
+  const exhaustedPrereqs = getFactionPreReqs(
+    faction,
+    techs,
+    options,
+    [planet],
+    {},
+  );
+  assert.equal(exhaustedPrereqs.BLUE, 1);
+  assert.equal(
+    canResearchTech(
+      techs["Fleet Logistics"],
+      options,
+      exhaustedPrereqs,
+      faction,
+      false,
+      techs,
+    ),
+    false,
+  );
+
+  const readiedPrereqs = getFactionPreReqs(
+    faction,
+    techs,
+    options,
+    [{ ...planet, state: "READIED" }],
+    {},
+  );
+  assert.equal(readiedPrereqs.BLUE, 2);
+  assert.equal(
+    canResearchTech(
+      techs["Fleet Logistics"],
+      options,
+      readiedPrereqs,
+      faction,
+      false,
+      techs,
+    ),
+    true,
+  );
 });
 
 test("tech state updates remember previous state and cancel when readied", () => {
@@ -593,6 +745,256 @@ test("status phase end readies exhausted planets and non-share-knowledge techs",
     updates["factions.Embers of Muaat.techs.Sarween Tools.state"],
     undefined,
   );
+});
+
+test("agenda voting starts turn order on start voting and clears on resolve", () => {
+  const gameData = baseGame({
+    factions: {
+      "Embers of Muaat": {
+        id: "Embers of Muaat",
+        color: "red",
+        order: 1,
+        mapPosition: 0,
+        techs: {},
+      },
+      "Xxcha Kingdom": {
+        id: "Xxcha Kingdom",
+        color: "green",
+        order: 2,
+        mapPosition: 1,
+        techs: {},
+      },
+      "Naaz-Rokha Alliance": {
+        id: "Naaz-Rokha Alliance",
+        color: "yellow",
+        order: 3,
+        mapPosition: 2,
+        techs: {},
+      },
+    },
+    state: {
+      activeplayer: "None",
+      phase: "AGENDA",
+      round: 3,
+      speaker: "Embers of Muaat",
+    },
+  });
+
+  const startUpdates = new StartVotingHandler(
+    gameData,
+    Events.StartVotingEvent(),
+  ).getUpdates();
+  assert.equal(startUpdates["state.votingStarted"], true);
+  assert.equal(startUpdates["state.activeplayer"], "Xxcha Kingdom");
+
+  const startedGame = applyUpdates(gameData, startUpdates);
+  const firstEndUpdates = new EndTurnHandler(
+    startedGame,
+    Events.EndTurnEvent({}),
+  ).getUpdates();
+  assert.equal(firstEndUpdates["state.activeplayer"], "Naaz-Rokha Alliance");
+
+  const secondTurnGame = applyUpdates(startedGame, firstEndUpdates);
+  const secondEndUpdates = new EndTurnHandler(
+    secondTurnGame,
+    Events.EndTurnEvent({}),
+  ).getUpdates();
+  assert.equal(secondEndUpdates["state.activeplayer"], "Embers of Muaat");
+
+  const speakerTurnGame = applyUpdates(secondTurnGame, secondEndUpdates);
+  const speakerEndUpdates = new EndTurnHandler(
+    speakerTurnGame,
+    Events.EndTurnEvent({}),
+  ).getUpdates();
+  assert.equal(speakerEndUpdates["state.activeplayer"], "None");
+
+  const resolvedGame = applyUpdates(speakerTurnGame, {
+    "state.activeplayer": "Embers of Muaat",
+    "state.votingStarted": true,
+  });
+  const resolveUpdates = new ResolveAgendaHandler(
+    resolvedGame,
+    Events.ResolveAgendaEvent("Mutiny", "For"),
+  ).getUpdates();
+  assert.equal(resolveUpdates["state.votingStarted"], false);
+  assert.equal(resolveUpdates["state.activeplayer"], "None");
+});
+
+test("undoing an agenda vote commit rewinds exhausted planets from that vote", () => {
+  const gameData = baseGame({
+    actionLog: [
+      {
+        timestampMillis: 4,
+        gameSeconds: 0,
+        data: Events.EndTurnEvent({}),
+      },
+      {
+        timestampMillis: 3,
+        gameSeconds: 0,
+        data: Events.CastVotesEvent("Xxcha Kingdom", 5, 0, "For", {
+          planetStateChange: {
+            planet: "Archon Ren",
+            state: "EXHAUSTED",
+            prevState: "READIED",
+          },
+        }),
+      },
+      {
+        timestampMillis: 2,
+        gameSeconds: 0,
+        data: Events.UpdatePlanetStateEvent("Archon Ren", "EXHAUSTED"),
+      },
+      {
+        timestampMillis: 1,
+        gameSeconds: 0,
+        data: Events.StartVotingEvent(),
+      },
+    ],
+    factions: {
+      "Embers of Muaat": {
+        id: "Embers of Muaat",
+        color: "red",
+        order: 1,
+        mapPosition: 0,
+        techs: {},
+      },
+      "Xxcha Kingdom": {
+        id: "Xxcha Kingdom",
+        color: "green",
+        order: 2,
+        mapPosition: 1,
+        techs: {},
+      },
+      "Naaz-Rokha Alliance": {
+        id: "Naaz-Rokha Alliance",
+        color: "yellow",
+        order: 3,
+        mapPosition: 2,
+        techs: {},
+      },
+    },
+    planets: {
+      "Archon Ren": {
+        id: "Archon Ren",
+        owner: "Xxcha Kingdom",
+        influence: 3,
+        resources: 2,
+        attributes: [],
+        types: [],
+        state: "EXHAUSTED",
+      },
+    },
+    state: {
+      activeplayer: "Naaz-Rokha Alliance",
+      phase: "AGENDA",
+      round: 3,
+      speaker: "Embers of Muaat",
+      votingStarted: true,
+    },
+  });
+  gameData.actionLog[0].data.event.prevFaction = "Xxcha Kingdom";
+
+  const handler = getOppositeHandler(gameData, gameData.actionLog[0].data);
+  updateGameData(gameData, handler.getUpdates());
+  updateActionLog(gameData, handler, 5, 0);
+
+  assert.equal(gameData.state.activeplayer, "Xxcha Kingdom");
+  assert.equal(gameData.planets["Archon Ren"].state, "READIED");
+  assert.deepEqual(
+    gameData.actionLog.map((entry) => entry.data.action),
+    ["START_VOTING"],
+  );
+});
+
+test("current agenda log keeps revealed agenda after voter commits", () => {
+  const actionLog = [
+    {
+      timestampMillis: 4,
+      data: Events.EndTurnEvent({}),
+    },
+    {
+      timestampMillis: 3,
+      data: Events.CastVotesEvent("Xxcha Kingdom", 5, 0, "For"),
+    },
+    {
+      timestampMillis: 2,
+      data: Events.StartVotingEvent(),
+    },
+    {
+      timestampMillis: 1,
+      data: Events.RevealAgendaEvent("Mutiny"),
+    },
+  ];
+
+  assert.equal(
+    getActiveAgenda(getCurrentAgendaLogEntries(actionLog)),
+    "Mutiny",
+  );
+});
+
+test("current agenda log stops after agenda resolution", () => {
+  const actionLog = [
+    {
+      timestampMillis: 3,
+      data: Events.ResolveAgendaEvent("Mutiny", "For"),
+    },
+    {
+      timestampMillis: 2,
+      data: Events.StartVotingEvent(),
+    },
+    {
+      timestampMillis: 1,
+      data: Events.RevealAgendaEvent("Mutiny"),
+    },
+  ];
+
+  assert.equal(getActiveAgenda(getCurrentAgendaLogEntries(actionLog)), undefined);
+});
+
+test("agenda vote totals can hide the active voter's uncommitted votes", () => {
+  const currentTurn = [
+    {
+      timestampMillis: 1,
+      data: Events.CastVotesEvent("Embers of Muaat", 3, 0, "Against"),
+    },
+    {
+      timestampMillis: 2,
+      data: Events.CastVotesEvent("Xxcha Kingdom", 5, 0, "For"),
+    },
+    {
+      timestampMillis: 3,
+      data: Events.CastVotesEvent("Naaz-Rokha Alliance", 4, 0, "For"),
+    },
+  ];
+  const agenda = { elect: "For/Against" };
+
+  assert.deepEqual(computeVotes(agenda, currentTurn, 2, false), {
+    Against: 3,
+    For: 9,
+  });
+  assert.deepEqual(
+    computeVotes(agenda, currentTurn, 2, false, [
+      "Xxcha Kingdom",
+      "Naaz-Rokha Alliance",
+    ]),
+    {
+      Against: 3,
+    },
+  );
+});
+
+test("agenda vote totals include bonus-only vote commits", () => {
+  const currentTurn = [
+    {
+      timestampMillis: 1,
+      data: Events.CastVotesEvent("Embers of Muaat", 0, 2, "For"),
+    },
+  ];
+  const agenda = { elect: "For/Against" };
+
+  assert.deepEqual(computeVotes(agenda, currentTurn, 2, false), {
+    For: 2,
+  });
 });
 
 test("updateGameData applies nested set, delete, and increment operations", () => {

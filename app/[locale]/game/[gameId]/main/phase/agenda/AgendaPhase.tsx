@@ -12,7 +12,6 @@ import { getTargets } from "../../../../../../../src/components/VoteBlock/VoteBl
 import {
   useActionLog,
   useAgendas,
-  useCurrentTurn,
   useOptions,
   usePlanets,
   useStrategyCards,
@@ -27,12 +26,14 @@ import { LockedButtons } from "../../../../../../../src/LockedButton";
 import {
   getActionCardTargets,
   getActiveAgenda,
-  getAllVotes,
   getObjectiveScorers,
-  getPromissoryTargets,
   getSelectedEligibleOutcomes,
 } from "../../../../../../../src/util/actionLog";
-import { getCurrentTurnLogEntries } from "../../../../../../../src/util/api/actionLog";
+import { computeVotes } from "../../../../../../../src/util/agendaVotes";
+import {
+  getCurrentAgendaLogEntries,
+  getCurrentTurnLogEntries,
+} from "../../../../../../../src/util/api/actionLog";
 import { useDataUpdate } from "../../../../../../../src/util/api/dataUpdate";
 import { Events } from "../../../../../../../src/util/api/events";
 import { hasScoredObjective } from "../../../../../../../src/util/api/util";
@@ -42,7 +43,7 @@ import {
   getFactionColor,
 } from "../../../../../../../src/util/factions";
 import { phaseString } from "../../../../../../../src/util/strings";
-import { ActionLog, Optional } from "../../../../../../../src/util/types/types";
+import { Optional } from "../../../../../../../src/util/types/types";
 import { rem } from "../../../../../../../src/util/util";
 import styles from "./AgendaPhase.module.scss";
 import AfterAnAgendaIsRevealed from "./components/AfterAnAgendaIsRevealed";
@@ -53,90 +54,8 @@ import StartVoting from "./components/StartVoting";
 import VotingColumn from "./components/VotingColumn";
 import WhenAnAgendaIsRevealed from "./components/WhenAnAgendaIsRevealed";
 
-export function computeVotes(
-  agenda: Optional<Agenda>,
-  currentTurn: ActionLog,
-  numFactions: number,
-  representativeGovernmentPassed: boolean,
-) {
-  const currentCouncilor = getActionCardTargets(
-    currentTurn,
-    "Distinguished Councilor",
-  )[0] as Optional<FactionId>;
-  const councilPreservePlayer = getActionCardTargets(
-    currentTurn,
-    "Council Preserve",
-  )[0] as Optional<FactionId>;
-  const bloodPactUsed =
-    getPromissoryTargets(currentTurn, "Blood Pact").length > 0;
-  const usingPredictive = getActionCardTargets(
-    currentTurn,
-    "Predictive Intelligence",
-  ) as FactionId[];
-  const castVotes: { [key: string]: number } =
-    agenda && agenda.elect === "For/Against" ? { For: 0, Against: 0 } : {};
-  const voteEvents = getAllVotes(currentTurn);
-  voteEvents.forEach((voteEvent) => {
-    if (
-      voteEvent.target &&
-      voteEvent.target !== "Abstain" &&
-      (voteEvent.votes ?? 0) > 0
-    ) {
-      let votes = castVotes[voteEvent.target] ?? 0;
-      votes += voteEvent.votes ?? 0;
-      votes += voteEvent.extraVotes ?? 0;
-      if (voteEvent.faction === "Empyrean" && bloodPactUsed) {
-        votes += 4;
-      }
-      if (voteEvent.faction === currentCouncilor) {
-        votes += 5;
-      }
-      if (voteEvent.faction === councilPreservePlayer) {
-        votes += 5;
-      }
-      if (usingPredictive.includes(voteEvent.faction)) {
-        votes += 3;
-      }
-      if (
-        voteEvent.faction === "Argent Flight" &&
-        !representativeGovernmentPassed
-      ) {
-        votes += numFactions;
-      }
-      castVotes[voteEvent.target] = votes;
-    }
-  });
-  const orderedVotes: {
-    [key: string]: number;
-  } = Object.keys(castVotes)
-    .sort((a, b) => {
-      if (a === "For") {
-        return -1;
-      }
-      if (b === "For") {
-        return 1;
-      }
-      if (a < b) {
-        return -1;
-      }
-      return 1;
-    })
-    .reduce(
-      (obj, key) => {
-        const votes = castVotes[key];
-        if (!votes) {
-          return obj;
-        }
-        obj[key] = votes;
-        return obj;
-      },
-      {} as { [key: string]: number },
-    );
-  return orderedVotes;
-}
-
 function AgendaSteps() {
-  const currentTurn = useCurrentTurn();
+  const actionLog = useActionLog();
   const dataUpdate = useDataUpdate();
   const factions = useFactions();
   const state = useGameState();
@@ -145,14 +64,15 @@ function AgendaSteps() {
   const intl = useIntl();
 
   const agendaNum = state.agendaNum ?? 1;
-  const currentAgenda = getActiveAgenda(currentTurn);
+  const currentAgendaLog = getCurrentAgendaLogEntries(actionLog);
+  const currentAgenda = getActiveAgenda(currentAgendaLog);
 
   if (agendaNum > 2) {
     return null;
   }
 
   let ancientBurialSites = getActionCardTargets(
-    currentTurn,
+    currentAgendaLog,
     "Ancient Burial Sites",
   )[0];
   if (ancientBurialSites === "None") {
@@ -446,11 +366,11 @@ export default function AgendaPhase() {
   if (!agendas || !factions) {
     return null;
   }
-  const currentTurn = getCurrentTurnLogEntries(actionLog);
+  const currentAgendaLog = getCurrentAgendaLogEntries(actionLog);
 
   let currentAgenda: Optional<Agenda>;
   const agendaNum = state?.agendaNum ?? 1;
-  const activeAgenda = getActiveAgenda(currentTurn);
+  const activeAgenda = getActiveAgenda(currentAgendaLog);
   if (activeAgenda) {
     currentAgenda = agendas[activeAgenda];
   }
@@ -460,7 +380,7 @@ export default function AgendaPhase() {
 
   const votes = computeVotes(
     currentAgenda,
-    currentTurn,
+    currentAgendaLog,
     Object.keys(factions).length,
     !!representativeGovernmentPassed,
   );
@@ -479,7 +399,7 @@ export default function AgendaPhase() {
   const localAgenda = currentAgenda
     ? structuredClone(currentAgenda)
     : undefined;
-  const eligibleOutcomes = getSelectedEligibleOutcomes(currentTurn);
+  const eligibleOutcomes = getSelectedEligibleOutcomes(currentAgendaLog);
   if (eligibleOutcomes && eligibleOutcomes !== "None" && localAgenda) {
     localAgenda.elect = eligibleOutcomes;
   }
@@ -496,7 +416,7 @@ export default function AgendaPhase() {
   );
 
   const electionHacked =
-    getActionCardTargets(currentTurn, "Hack Election").length > 0;
+    getActionCardTargets(currentAgendaLog, "Hack Election").length > 0;
 
   const votingOrder = Object.values(factions ?? {}).sort((a, b) => {
     if (a.name === "Argent Flight") {

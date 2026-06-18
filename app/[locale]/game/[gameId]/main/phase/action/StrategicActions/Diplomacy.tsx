@@ -86,14 +86,16 @@ function Secondary({ factionId }: { factionId: FactionId }) {
   return (
     <Conditional appSection="PLANETS">
       <LabeledDiv
-        label={`${(<FactionComponents.Name factionId={factionId} />)} - ${(
-          <FormattedMessage
-            id="Xxcha Kingdom.Abilities.Peace Accords.Title"
-            defaultMessage="Peace Accords"
-            description="Title of Faction Ability: Peace Accords"
-          />
-        )}
-      )}`}
+        label={
+          <span>
+            <FactionComponents.Name factionId={factionId} /> -{" "}
+            <FormattedMessage
+              id="Xxcha Kingdom.Abilities.Peace Accords.Title"
+              defaultMessage="Peace Accords"
+              description="Title of Faction Ability: Peace Accords"
+            />
+          </span>
+        }
         color={colors.color}
         borderColor={colors.border}
         blur

@@ -5,8 +5,8 @@ import VoteBlock, {
   getTargets,
 } from "../../../../../../../../src/components/VoteBlock/VoteBlock";
 import {
+  useActionLog,
   useAgendas,
-  useCurrentTurn,
   useOptions,
   usePlanets,
   useStrategyCards,
@@ -14,6 +14,7 @@ import {
 } from "../../../../../../../../src/context/dataHooks";
 import { useFactions } from "../../../../../../../../src/context/factionDataHooks";
 import { useObjectives } from "../../../../../../../../src/context/objectiveDataHooks";
+import { useGameState } from "../../../../../../../../src/context/stateDataHooks";
 import { ClientOnlyHoverMenu } from "../../../../../../../../src/HoverMenu";
 import { SelectableRow } from "../../../../../../../../src/SelectableRow";
 import {
@@ -21,14 +22,19 @@ import {
   getSelectedEligibleOutcomes,
   getSpeakerTieBreak,
 } from "../../../../../../../../src/util/actionLog";
+import { getCurrentAgendaLogEntries } from "../../../../../../../../src/util/api/actionLog";
 import { useDataUpdate } from "../../../../../../../../src/util/api/dataUpdate";
 import { Events } from "../../../../../../../../src/util/api/events";
+import { computeVotes } from "../../../../../../../../src/util/agendaVotes";
 import {
   convertToFactionBorder,
   convertToFactionColor,
 } from "../../../../../../../../src/util/factions";
+import {
+  getAgendaVotingOrder,
+  getUncommittedAgendaFactions,
+} from "../../../../../../../../src/util/helpers";
 import { objectKeys, rem } from "../../../../../../../../src/util/util";
-import { computeVotes } from "../AgendaPhase";
 
 export default function VotingColumn({
   speaker,
@@ -37,45 +43,28 @@ export default function VotingColumn({
   speaker: FactionId;
   manualVotes?: boolean;
 }) {
+  const actionLog = useActionLog();
   const agendas = useAgendas();
-  const currentTurn = useCurrentTurn();
   const factions = useFactions();
+  const state = useGameState();
 
-  const speakerOrder = factions[speaker]?.order ?? 1;
+  const votingOrder = getAgendaVotingOrder(state, factions);
 
-  const votingOrder = Object.values(factions).sort((a, b) => {
-    if (a.name === "Argent Flight") {
-      return -1;
-    }
-    if (b.name === "Argent Flight") {
-      return 1;
-    }
-    if (a.order === speakerOrder) {
-      return 1;
-    }
-    if (b.order === speakerOrder) {
-      return -1;
-    }
-    if (a.order > speakerOrder && b.order < speakerOrder) {
-      return -1;
-    }
-    if (a.order < speakerOrder && b.order > speakerOrder) {
-      return 1;
-    }
-    return a.order - b.order;
-  });
-
-  const activeAgenda = getActiveAgenda(currentTurn);
+  const currentAgendaLog = getCurrentAgendaLogEntries(actionLog);
+  const activeAgenda = getActiveAgenda(currentAgendaLog);
   const currentAgenda = activeAgenda ? agendas[activeAgenda] : undefined;
 
   // Hack the elect field to handle Covert Legislation.
   const localAgenda = currentAgenda
     ? structuredClone(currentAgenda)
     : undefined;
-  const eligibleOutcomes = getSelectedEligibleOutcomes(currentTurn);
+  const eligibleOutcomes = getSelectedEligibleOutcomes(currentAgendaLog);
   if (eligibleOutcomes && eligibleOutcomes !== "None" && localAgenda) {
     localAgenda.elect = eligibleOutcomes;
   }
+  const hiddenFactions = new Set(
+    state.votingStarted ? getUncommittedAgendaFactions(state, factions) : [],
+  );
 
   return (
     <div
@@ -140,6 +129,8 @@ export default function VotingColumn({
             factionId={faction.id}
             agenda={localAgenda}
             manualVotes={manualVotes}
+            hideVotes={hiddenFactions.has(faction.id)}
+            activeVote={faction.id === state.activeplayer}
           />
         );
       })}
@@ -149,18 +140,24 @@ export default function VotingColumn({
 }
 
 function SpeakerTieBreak({ speaker }: { speaker: FactionId }) {
+  const actionLog = useActionLog();
   const agendas = useAgendas();
-  const currentTurn = useCurrentTurn();
   const dataUpdate = useDataUpdate();
   const factions = useFactions();
   const intl = useIntl();
   const objectives = useObjectives();
   const options = useOptions();
   const planets = usePlanets();
+  const state = useGameState();
   const strategyCards = useStrategyCards();
   const viewOnly = useViewOnly();
 
-  const activeAgenda = getActiveAgenda(currentTurn);
+  if (state.activeplayer && state.activeplayer !== "None") {
+    return null;
+  }
+
+  const currentAgendaLog = getCurrentAgendaLogEntries(actionLog);
+  const activeAgenda = getActiveAgenda(currentAgendaLog);
   const currentAgenda = activeAgenda ? agendas[activeAgenda] : undefined;
   if (!currentAgenda) {
     return null;
@@ -169,7 +166,7 @@ function SpeakerTieBreak({ speaker }: { speaker: FactionId }) {
   const localAgenda = currentAgenda
     ? structuredClone(currentAgenda)
     : undefined;
-  const eligibleOutcomes = getSelectedEligibleOutcomes(currentTurn);
+  const eligibleOutcomes = getSelectedEligibleOutcomes(currentAgendaLog);
   if (eligibleOutcomes && eligibleOutcomes !== "None" && localAgenda) {
     localAgenda.elect = eligibleOutcomes;
   }
@@ -179,7 +176,7 @@ function SpeakerTieBreak({ speaker }: { speaker: FactionId }) {
 
   const votes = computeVotes(
     currentAgenda,
-    currentTurn,
+    currentAgendaLog,
     objectKeys(factions).length,
     !!representativeGovernmentPassed,
   );
@@ -217,7 +214,7 @@ function SpeakerTieBreak({ speaker }: { speaker: FactionId }) {
   if (items > 10) {
     items = 10;
   }
-  const tieBreak = getSpeakerTieBreak(currentTurn);
+  const tieBreak = getSpeakerTieBreak(currentAgendaLog);
 
   if (tieBreak) {
     return (

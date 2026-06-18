@@ -16,6 +16,7 @@ import {
 } from "../../../../../../../../src/context/dataHooks";
 import { useFactions } from "../../../../../../../../src/context/factionDataHooks";
 import { useObjectives } from "../../../../../../../../src/context/objectiveDataHooks";
+import { useGameState } from "../../../../../../../../src/context/stateDataHooks";
 import { SymbolX } from "../../../../../../../../src/icons/svgs";
 import { InfoRow } from "../../../../../../../../src/InfoRow";
 import { SelectableRow } from "../../../../../../../../src/SelectableRow";
@@ -28,7 +29,7 @@ import {
   getSelectedSubAgenda,
   getSpeakerTieBreak,
 } from "../../../../../../../../src/util/actionLog";
-import { getCurrentTurnLogEntries } from "../../../../../../../../src/util/api/actionLog";
+import { getCurrentAgendaLogEntries } from "../../../../../../../../src/util/api/actionLog";
 import { useDataUpdate } from "../../../../../../../../src/util/api/dataUpdate";
 import { Events } from "../../../../../../../../src/util/api/events";
 import {
@@ -41,7 +42,7 @@ import {
   Optional,
 } from "../../../../../../../../src/util/types/types";
 import { rem } from "../../../../../../../../src/util/util";
-import { computeVotes } from "../AgendaPhase";
+import { computeVotes } from "../../../../../../../../src/util/agendaVotes";
 
 function canScoreObjective(
   factionId: FactionId,
@@ -87,7 +88,8 @@ export default function AgendaDetails({
   const options = useOptions();
   const planets = usePlanets();
   const relics = useRelics();
-  const currentTurn = getCurrentTurnLogEntries(actionLog);
+  const state = useGameState();
+  const currentTurn = getCurrentAgendaLogEntries(actionLog);
   const viewOnly = useViewOnly();
 
   const intl = useIntl();
@@ -98,6 +100,9 @@ export default function AgendaDetails({
   }
 
   const agenda = agendaId ? (agendas ?? {})[agendaId] : undefined;
+  if (state.activeplayer && state.activeplayer !== "None") {
+    return null;
+  }
 
   const representativeGovernmentPassed =
     agendas["Representative Government"]?.passed;

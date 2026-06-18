@@ -9,7 +9,6 @@ import {
   useActionLog,
   useAgendas,
   useAttachments,
-  useCurrentTurn,
   useLeaders,
   useOptions,
   usePlanets,
@@ -27,14 +26,16 @@ import {
   getSpeakerTieBreak,
 } from "../../../../../../../../src/util/actionLog";
 import {
+  getCurrentAgendaLogEntries,
   getCurrentPhasePreviousLogEntries,
   getCurrentTurnLogEntries,
 } from "../../../../../../../../src/util/api/actionLog";
 import { useDataUpdate } from "../../../../../../../../src/util/api/dataUpdate";
 import { Events } from "../../../../../../../../src/util/api/events";
+import { computeVotes } from "../../../../../../../../src/util/agendaVotes";
+import { getUncommittedAgendaFactions } from "../../../../../../../../src/util/helpers";
 import { ActionLog } from "../../../../../../../../src/util/types/types";
 import { objectKeys, rem } from "../../../../../../../../src/util/util";
-import { computeVotes } from "../AgendaPhase";
 import AgendaDetails from "./AgendaDetails";
 import CovertLegislation from "./CovertLegislation";
 
@@ -48,7 +49,6 @@ export function CastVotesSection({
   const actionLog = useActionLog();
   const agendas = useAgendas();
   const attachments = useAttachments();
-  const currentTurn = useCurrentTurn();
   const dataUpdate = useDataUpdate();
   const factions = useFactions();
   const intl = useIntl();
@@ -65,7 +65,8 @@ export function CastVotesSection({
     return null;
   }
 
-  const currentAgendaId = getActiveAgenda(currentTurn);
+  const currentAgendaLog = getCurrentAgendaLogEntries(actionLog);
+  const currentAgendaId = getActiveAgenda(currentAgendaLog);
   if (!currentAgendaId) {
     return null;
   }
@@ -76,13 +77,16 @@ export function CastVotesSection({
 
   const localAgenda = structuredClone(currentAgenda);
   // Hack for Covert Legislation.
-  const eligibleOutcomes = getSelectedEligibleOutcomes(currentTurn);
+  const eligibleOutcomes = getSelectedEligibleOutcomes(currentAgendaLog);
   if (eligibleOutcomes && eligibleOutcomes !== "None" && localAgenda) {
     localAgenda.elect = eligibleOutcomes;
   }
 
   const representativeGovernmentPassed =
     agendas["Representative Government"]?.passed;
+  const hiddenFactions = state.votingStarted
+    ? getUncommittedAgendaFactions(state, factions)
+    : [];
 
   let totalVotes = 0;
   for (const faction of Object.values(factions)) {
@@ -115,9 +119,10 @@ export function CastVotesSection({
 
   const votes = computeVotes(
     currentAgenda,
-    currentTurn,
+    currentAgendaLog,
     objectKeys(factions).length,
     !!representativeGovernmentPassed,
+    hiddenFactions,
   );
   const maxVotes = Object.values(votes).reduce((maxVotes, voteCount) => {
     return Math.max(maxVotes, voteCount);
@@ -135,7 +140,7 @@ export function CastVotesSection({
   }
   totalVotes = Math.max(totalVotes, 0);
 
-  const selectedSubAgenda = getSelectedSubAgenda(currentTurn);
+  const selectedSubAgenda = getSelectedSubAgenda(currentAgendaLog);
   const subAgenda = selectedSubAgenda ? agendas[selectedSubAgenda] : undefined;
 
   function getSelectedOutcome(
@@ -149,7 +154,13 @@ export function CastVotesSection({
   }
 
   function readyToResolve() {
-    if (!currentAgenda || !getSelectedOutcome(selectedTargets, currentTurn)) {
+    if (
+      !currentAgenda ||
+      !getSelectedOutcome(selectedTargets, currentAgendaLog)
+    ) {
+      return false;
+    }
+    if (state.activeplayer && state.activeplayer !== "None") {
       return false;
     }
     const localAgenda =
@@ -164,7 +175,7 @@ export function CastVotesSection({
     if (!currentAgenda) {
       return;
     }
-    const target = getSelectedOutcome(selectedTargets, currentTurn);
+    const target = getSelectedOutcome(selectedTargets, currentAgendaLog);
     if (!target) {
       return;
     }
@@ -237,7 +248,7 @@ export function CastVotesSection({
               description="Text on a button that resolves the current agenda with a specific outcome."
               values={{
                 outcome: translateOutcome(
-                  getSelectedOutcome(selectedTargets, currentTurn),
+                  getSelectedOutcome(selectedTargets, currentAgendaLog),
                   localAgenda?.elect,
                   planets,
                   factions,

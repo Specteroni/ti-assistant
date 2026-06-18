@@ -3,7 +3,8 @@ type ActionLogAction =
   | "DELETE"
   | "IGNORE"
   | "REWIND_AND_DELETE"
-  | "REWIND_AND_REPLACE";
+  | "REWIND_AND_REPLACE"
+  | "REWIND_AFTER_AND_DELETE";
 
 interface IHandler<DataType> {
   new (gameData: StoredGameData, data: DataType): Handler;

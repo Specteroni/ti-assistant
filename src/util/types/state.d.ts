@@ -25,5 +25,6 @@ interface GameState {
   round: number;
   speaker: FactionId;
   tyrant?: FactionId;
+  undoCount?: number;
   votingStarted?: boolean;
 }

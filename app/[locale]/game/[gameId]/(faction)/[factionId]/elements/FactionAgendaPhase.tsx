@@ -1,6 +1,9 @@
 import React, { useRef } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
-import { AgendaRow } from "../../../../../../../src/AgendaRow";
+import {
+  AgendaReference,
+  AgendaRow,
+} from "../../../../../../../src/AgendaRow";
 import LabeledDiv from "../../../../../../../src/components/LabeledDiv/LabeledDiv";
 import LabeledLine from "../../../../../../../src/components/LabeledLine/LabeledLine";
 import { Selector } from "../../../../../../../src/components/Selector/Selector";
@@ -13,7 +16,6 @@ import {
   useActionLog,
   useAgendas,
   useAttachments,
-  useCurrentTurn,
   useLeaders,
   useOptions,
   usePlanets,
@@ -33,12 +35,16 @@ import {
   getSelectedEligibleOutcomes,
   getSpeakerTieBreak,
 } from "../../../../../../../src/util/actionLog";
-import { getCurrentPhasePreviousLogEntries } from "../../../../../../../src/util/api/actionLog";
+import {
+  getCurrentAgendaLogEntries,
+  getCurrentPhasePreviousLogEntries,
+} from "../../../../../../../src/util/api/actionLog";
 import { useDataUpdate } from "../../../../../../../src/util/api/dataUpdate";
 import { Events } from "../../../../../../../src/util/api/events";
+import { computeVotes } from "../../../../../../../src/util/agendaVotes";
+import { getUncommittedAgendaFactions } from "../../../../../../../src/util/helpers";
 import { Optional } from "../../../../../../../src/util/types/types";
 import { rem } from "../../../../../../../src/util/util";
-import { computeVotes } from "../../../main/phase/agenda/AgendaPhase";
 import styles from "../faction-page.module.scss";
 
 export default function FactionAgendaPhase({
@@ -49,7 +55,6 @@ export default function FactionAgendaPhase({
   const actionLog = useActionLog();
   const agendas = useAgendas();
   const attachments = useAttachments();
-  const currentTurn = useCurrentTurn();
   const dataUpdate = useDataUpdate();
   const factions = useFactions();
   const intl = useIntl();
@@ -62,8 +67,12 @@ export default function FactionAgendaPhase({
   const techs = useTechs();
   const viewOnly = useViewOnly();
   const voteRef = useRef<HTMLDivElement>(null);
+  const currentAgendaLog = getCurrentAgendaLogEntries(actionLog);
 
   function saveCastVotes(element: HTMLDivElement) {
+    if (!canEditVotes) {
+      return;
+    }
     if (element.innerText !== "") {
       const numerical = parseInt(element.innerText);
       if (!isNaN(numerical)) {
@@ -82,7 +91,7 @@ export default function FactionAgendaPhase({
   }
 
   async function completeAgenda() {
-    const tieBreak = getSpeakerTieBreak(currentTurn);
+    const tieBreak = getSpeakerTieBreak(currentAgendaLog);
     const target = tieBreak ? tieBreak : selectedTargets[0];
     if (!target || !currentAgenda) {
       return;
@@ -90,8 +99,27 @@ export default function FactionAgendaPhase({
     dataUpdate(Events.ResolveAgendaEvent(currentAgenda.id, target));
   }
 
+  async function commitVotes() {
+    await dataUpdate(Events.EndTurnEvent({}));
+  }
+
+  async function abstainAndCommit() {
+    if (!isActiveVoter) {
+      return;
+    }
+    await dataUpdate(
+      Events.CastVotesEvent(
+        factionId,
+        /* votes= */ 0,
+        /* extraVotes= */ 0,
+        "Abstain",
+      ),
+    );
+    await dataUpdate(Events.EndTurnEvent({}));
+  }
+
   let currentAgenda: Optional<Agenda>;
-  const activeAgenda = getActiveAgenda(currentTurn);
+  const activeAgenda = getActiveAgenda(currentAgendaLog);
   if (activeAgenda) {
     currentAgenda = agendas[activeAgenda];
   }
@@ -162,10 +190,10 @@ export default function FactionAgendaPhase({
   if (!faction) {
     return null;
   }
-  const factionVotes = getFactionVotes(currentTurn, factionId);
+  const factionVotes = getFactionVotes(currentAgendaLog, factionId);
 
   const localAgenda = structuredClone(currentAgenda);
-  const eligibleOutcomes = getSelectedEligibleOutcomes(currentTurn);
+  const eligibleOutcomes = getSelectedEligibleOutcomes(currentAgendaLog);
   if (localAgenda && eligibleOutcomes && eligibleOutcomes !== "None") {
     localAgenda.elect = eligibleOutcomes;
   }
@@ -183,7 +211,7 @@ export default function FactionAgendaPhase({
   );
   const totalVotes = computeVotes(
     currentAgenda,
-    currentTurn,
+    currentAgendaLog,
     Object.keys(factions).length,
     !!representativeGovernmentPassed,
   );
@@ -215,16 +243,40 @@ export default function FactionAgendaPhase({
   if (agendaNum > 2) {
     return null;
   }
-  const tieBreak = getSpeakerTieBreak(currentTurn);
+  const tieBreak = getSpeakerTieBreak(currentAgendaLog);
   const outcomes = new Set<OutcomeType>();
   Object.values(agendas ?? {}).forEach((agenda) => {
     if (agenda.target || agenda.elect === "???") return;
     outcomes.add(agenda.elect);
   });
   const label = agendaNum === 1 ? "FIRST AGENDA" : "SECOND AGENDA";
+  const factionCanVote = canFactionVote(
+    faction,
+    agendas,
+    state,
+    currentAgendaLog,
+    leaders,
+  );
   const hasVotableTarget =
     !!factionVotes?.target && factionVotes?.target !== "Abstain";
   const items = Math.min((targets ?? []).length, 12);
+  const isSpeaker = factionId === state.speaker;
+  const isActiveVoter = state.votingStarted && state.activeplayer === factionId;
+  const votingComplete = state.votingStarted && state.activeplayer === "None";
+  const activeVoter = state.activeplayer && state.activeplayer !== "None";
+  const uncommittedFactions = new Set(
+    state.votingStarted ? getUncommittedAgendaFactions(state, factions) : [],
+  );
+  const canEditVotes =
+    !state.votingStarted || uncommittedFactions.has(factionId);
+  const committedVoteTotal =
+    (factionVotes?.votes ?? 0) + (factionVotes?.extraVotes ?? 0);
+  const canCommitVotes =
+    isActiveVoter &&
+    (!factionCanVote ||
+      (!!factionVotes?.target &&
+        factionVotes.target !== "Abstain" &&
+        committedVoteTotal > 0));
 
   return (
     <>
@@ -317,17 +369,47 @@ export default function FactionAgendaPhase({
         className="flexColumn"
         style={{ alignItems: "stretch", width: "100%" }}
       >
+        <AgendaReference
+          agenda={localAgenda}
+          compact
+          style={{
+            border: `${"1px"} solid var(--neutral-border)`,
+            borderRadius: rem(8),
+            marginBottom: rem(8),
+          }}
+        />
         <LabeledLine leftLabel={`Vote on ${currentAgenda.name}`} />
-        {!canFactionVote(faction, agendas, state, currentTurn, leaders) ? (
-          <div className="flexRow">
-            <FormattedMessage
-              id="c4LYqr"
-              description="Text informing a player that they cannot vote."
-              defaultMessage="Cannot Vote"
-            />
+        {!factionCanVote ? (
+          <div className="flexColumn" style={{ gap: rem(8) }}>
+            <div className="flexRow">
+              <FormattedMessage
+                id="c4LYqr"
+                description="Text informing a player that they cannot vote."
+                defaultMessage="Cannot Vote"
+              />
+            </div>
           </div>
         ) : (
           <React.Fragment>
+            {!isActiveVoter && activeVoter ? (
+              <div
+                className="flexRow"
+                style={{
+                  color: "var(--neutral-border)",
+                  fontSize: rem(18),
+                  justifyContent: "flex-start",
+                  paddingLeft: rem(8),
+                  width: "100%",
+                }}
+              >
+                <FormattedMessage
+                  id="Agenda.WaitingForVoter"
+                  defaultMessage="Waiting for {faction}"
+                  description="Text telling a player which faction is currently voting."
+                  values={{ faction: activeVoter }}
+                />
+              </div>
+            ) : null}
             <div
               className="flexColumn"
               style={{
@@ -348,6 +430,9 @@ export default function FactionAgendaPhase({
                 options={targets}
                 selectedItem={factionVotes?.target}
                 toggleItem={(itemId, add) => {
+                  if (!canEditVotes) {
+                    return;
+                  }
                   if (add) {
                     dataUpdate(
                       Events.CastVotesEvent(
@@ -368,6 +453,7 @@ export default function FactionAgendaPhase({
                     );
                   }
                 }}
+                viewOnly={viewOnly || !canEditVotes}
               />
               <div
                 className="flexRow"
@@ -408,7 +494,10 @@ export default function FactionAgendaPhase({
                   {(factionVotes?.votes ?? 0 > 0) ? (
                     <div
                       className="arrowDown"
-                      onClick={() =>
+                      onClick={() => {
+                        if (!canEditVotes) {
+                          return;
+                        }
                         dataUpdate(
                           Events.CastVotesEvent(
                             factionId,
@@ -416,8 +505,8 @@ export default function FactionAgendaPhase({
                             factionVotes?.extraVotes ?? 0,
                             factionVotes?.target,
                           ),
-                        )
-                      }
+                        );
+                      }}
                     ></div>
                   ) : (
                     <div style={{ width: rem(12) }}></div>
@@ -425,16 +514,19 @@ export default function FactionAgendaPhase({
                   <div
                     className="flexRow"
                     ref={voteRef}
-                    contentEditable={hasVotableTarget}
+                    contentEditable={hasVotableTarget && canEditVotes}
                     suppressContentEditableWarning={true}
                     onClick={(e) => {
-                      if (!hasVotableTarget) {
+                      if (!hasVotableTarget || !canEditVotes) {
                         return;
                       }
                       e.currentTarget.innerText = "";
                     }}
                     onBlur={(e) => saveCastVotes(e.currentTarget)}
-                    style={{ width: rem(32) }}
+                    style={{
+                      opacity: canEditVotes ? 1 : 0.7,
+                      width: rem(32),
+                    }}
                   >
                     {factionVotes?.votes ?? 0}
                   </div>
@@ -442,7 +534,10 @@ export default function FactionAgendaPhase({
                   factionVotes?.target !== "Abstain" ? (
                     <div
                       className="arrowUp"
-                      onClick={() =>
+                      onClick={() => {
+                        if (!canEditVotes) {
+                          return;
+                        }
                         dataUpdate(
                           Events.CastVotesEvent(
                             factionId,
@@ -450,8 +545,8 @@ export default function FactionAgendaPhase({
                             factionVotes?.extraVotes ?? 0,
                             factionVotes?.target,
                           ),
-                        )
-                      }
+                        );
+                      }}
                     ></div>
                   ) : null}
                 </div>
@@ -459,78 +554,110 @@ export default function FactionAgendaPhase({
             </div>
           </React.Fragment>
         )}
+        <div
+          className="flexRow"
+          style={{
+            gap: rem(8),
+            justifyContent: "center",
+            paddingTop: rem(8),
+            width: "100%",
+          }}
+        >
+          <button onClick={commitVotes} disabled={viewOnly || !canCommitVotes}>
+            <FormattedMessage
+              id="Agenda.CommitVotes"
+              defaultMessage="Commit Votes"
+              description="Text on a button that commits a player's agenda votes and advances voting order."
+            />
+          </button>
+          <button
+            className={factionVotes?.target === "Abstain" ? "selected" : ""}
+            onClick={abstainAndCommit}
+            disabled={viewOnly || !isActiveVoter}
+          >
+            <FormattedMessage
+              id="LaXLjN"
+              defaultMessage="Abstain"
+              description="Outcome choosing not to vote."
+            />
+          </button>
+        </div>
         <LabeledLine />
-        {isTie ? (
+        {votingComplete && isTie ? (
           !tieBreak ? (
-            <LabeledDiv
-              label={
-                <FormattedMessage
-                  id="5R8kPv"
-                  description="Label for a section for actions by the speaker."
-                  defaultMessage="Speaker Actions"
-                />
-              }
-              innerStyle={{ paddingTop: rem(12) }}
-            >
-              <ClientOnlyHoverMenu
+            isSpeaker ? (
+              <LabeledDiv
                 label={
                   <FormattedMessage
-                    id="Kzzn9t"
-                    description="Text on a hover menu for the speaker choosing the outcome."
-                    defaultMessage="Choose outcome if tied"
+                    id="5R8kPv"
+                    description="Label for a section for actions by the speaker."
+                    defaultMessage="Speaker Actions"
                   />
                 }
+                innerStyle={{ paddingTop: rem(12) }}
               >
-                <div
-                  className="flexRow"
-                  style={{
-                    maxWidth: "85vw",
-                    gap: rem(4),
-                    whiteSpace: "nowrap",
-                    padding: rem(8),
-                    alignItems: "stretch",
-                    display: "grid",
-                    gridAutoFlow: "column",
-                    gridTemplateRows: `repeat(${items}, auto)`,
-                    justifyContent: "flex-start",
-                    overflowX: "auto",
-                  }}
+                <ClientOnlyHoverMenu
+                  label={
+                    <FormattedMessage
+                      id="Kzzn9t"
+                      description="Text on a hover menu for the speaker choosing the outcome."
+                      defaultMessage="Choose outcome if tied"
+                    />
+                  }
                 >
-                  {selectedTargets.length > 0
-                    ? selectedTargets.map((target) => {
-                        return (
-                          <button
-                            key={target}
-                            style={{ writingMode: "horizontal-tb" }}
-                            onClick={() =>
-                              dataUpdate(Events.SpeakerTieBreakEvent(target))
-                            }
-                            disabled={viewOnly}
-                          >
-                            {target}
-                          </button>
-                        );
-                      })
-                    : targets.map((target) => {
-                        if (target.id === "Abstain") {
-                          return null;
-                        }
-                        return (
-                          <button
-                            key={target.id}
-                            style={{ writingMode: "horizontal-tb" }}
-                            onClick={() =>
-                              dataUpdate(Events.SpeakerTieBreakEvent(target.id))
-                            }
-                            disabled={viewOnly}
-                          >
-                            {target.name}
-                          </button>
-                        );
-                      })}
-                </div>
-              </ClientOnlyHoverMenu>
-            </LabeledDiv>
+                  <div
+                    className="flexRow"
+                    style={{
+                      maxWidth: "85vw",
+                      gap: rem(4),
+                      whiteSpace: "nowrap",
+                      padding: rem(8),
+                      alignItems: "stretch",
+                      display: "grid",
+                      gridAutoFlow: "column",
+                      gridTemplateRows: `repeat(${items}, auto)`,
+                      justifyContent: "flex-start",
+                      overflowX: "auto",
+                    }}
+                  >
+                    {selectedTargets.length > 0
+                      ? selectedTargets.map((target) => {
+                          return (
+                            <button
+                              key={target}
+                              style={{ writingMode: "horizontal-tb" }}
+                              onClick={() =>
+                                dataUpdate(Events.SpeakerTieBreakEvent(target))
+                              }
+                              disabled={viewOnly}
+                            >
+                              {target}
+                            </button>
+                          );
+                        })
+                      : targets.map((target) => {
+                          if (target.id === "Abstain") {
+                            return null;
+                          }
+                          return (
+                            <button
+                              key={target.id}
+                              style={{ writingMode: "horizontal-tb" }}
+                              onClick={() =>
+                                dataUpdate(
+                                  Events.SpeakerTieBreakEvent(target.id),
+                                )
+                              }
+                              disabled={viewOnly}
+                            >
+                              {target.name}
+                            </button>
+                          );
+                        })}
+                  </div>
+                </ClientOnlyHoverMenu>
+              </LabeledDiv>
+            ) : null
           ) : (
             <LabeledDiv
               label="SPEAKER TIE BREAK"
@@ -548,7 +675,7 @@ export default function FactionAgendaPhase({
             </LabeledDiv>
           )
         ) : null}
-        {selectedTargets.length === 1 || tieBreak ? (
+        {isSpeaker && votingComplete && (selectedTargets.length === 1 || tieBreak) ? (
           <div
             className="flexRow"
             style={{ width: "100%", justifyContent: "center" }}

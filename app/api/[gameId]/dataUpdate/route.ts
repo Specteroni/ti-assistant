@@ -273,7 +273,12 @@ async function updateLocalFileGame(
       return NextResponse.json({ success: true });
     }
 
-    applyLocalGameUpdates(gameData, handler.getUpdates());
+    const updates = handler.getUpdates();
+    if (data.action === "UNDO") {
+      updates["state.undoCount"] = "INCREMENT";
+    }
+
+    applyLocalGameUpdates(gameData, updates);
     updateLocalActionLog(gameData, handler, data.timestamp, data.gameTime);
 
     if (gameData.timers) {
@@ -331,9 +336,10 @@ async function updateActionLog(
   let endOfTurn = false;
   // Used for rewinding
   const orderedEntries: Record<string, ActionLogEntry<GameUpdateData>> = {};
-  actionLog.forEach((storedLogEntry) => {
+  const actionLogDocs = actionLog.docs;
+  for (const [entryIndex, storedLogEntry] of actionLogDocs.entries()) {
     if (foundLogEntry || endOfTurn) {
-      return;
+      break;
     }
 
     const logEntry = storedLogEntry.data() as ActionLogEntry<GameUpdateData>;
@@ -348,7 +354,7 @@ async function updateActionLog(
       case "DELETE": {
         t.delete(gameRef.collection("actionLog").doc(storedLogEntry.id));
         foundLogEntry = true;
-        return;
+        break;
       }
       case "REPLACE": {
         const logEntry: Record<string, any> = handler.getLogEntry();
@@ -361,7 +367,7 @@ async function updateActionLog(
           logEntry,
         );
         foundLogEntry = true;
-        return;
+        break;
       }
       case "REWIND_AND_DELETE": {
         for (const [entryId, entry] of Object.entries(orderedEntries)) {
@@ -374,7 +380,7 @@ async function updateActionLog(
         }
         t.delete(gameRef.collection("actionLog").doc(storedLogEntry.id));
         foundLogEntry = true;
-        return;
+        break;
       }
       case "REWIND_AND_REPLACE": {
         for (const [entryId, entry] of Object.entries(orderedEntries)) {
@@ -395,12 +401,40 @@ async function updateActionLog(
           logEntry,
         );
         foundLogEntry = true;
-        return;
+        break;
+      }
+      case "REWIND_AFTER_AND_DELETE": {
+        t.delete(gameRef.collection("actionLog").doc(storedLogEntry.id));
+        for (let i = entryIndex + 1; i < actionLogDocs.length; ++i) {
+          const entryDoc = actionLogDocs[i];
+          if (!entryDoc) {
+            continue;
+          }
+          const entry = entryDoc.data() as ActionLogEntry<GameUpdateData>;
+          if (
+            TURN_BOUNDARIES.includes(entry.data.action) ||
+            entry.data.action === "START_VOTING"
+          ) {
+            break;
+          }
+          const undoHandler = getOppositeHandler(handler.gameData, entry.data);
+          if (!undoHandler) {
+            continue;
+          }
+          t.update(gameRef, convertToServerUpdates(undoHandler.getUpdates()));
+          t.delete(gameRef.collection("actionLog").doc(entryDoc.id));
+        }
+        foundLogEntry = true;
+        break;
       }
     }
 
+    if (foundLogEntry) {
+      break;
+    }
+
     orderedEntries[storedLogEntry.id] = logEntry;
-  });
+  }
 
   if (foundLogEntry) {
     return;
@@ -799,7 +833,12 @@ function updateInTransaction(
       return true;
     }
 
-    let updates = convertToServerUpdates(handler.getUpdates());
+    const rawUpdates = handler.getUpdates();
+    if (data.action === "UNDO") {
+      rawUpdates["state.undoCount"] = "INCREMENT";
+    }
+
+    let updates = convertToServerUpdates(rawUpdates);
 
     updates[`lastUpdate`] = data.timestamp;
     // Needs to happen after handler.getUpdates();

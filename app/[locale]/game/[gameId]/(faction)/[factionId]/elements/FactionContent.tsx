@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import Conditional from "../../../../../../../src/components/Conditional/Conditional";
 import FactionComponents from "../../../../../../../src/components/FactionComponents/FactionComponents";
@@ -7,6 +7,7 @@ import {
   useActiveFactionId,
   useOnDeckFactionId,
 } from "../../../../../../../src/context/gameDataHooks";
+import { useGameState } from "../../../../../../../src/context/stateDataHooks";
 import { FactionSummary } from "../../../../../../../src/FactionSummary";
 import { Tab, TabBody } from "../../../../../../../src/Tab";
 import { rem } from "../../../../../../../src/util/util";
@@ -22,9 +23,14 @@ export default function FactionContent({
 }: {
   factionId: FactionId;
 }) {
-  const [tabShown, setTabShown] = useState<string>("");
+  const [tabShown, setTabShown] = useState<string>("planets");
   const activeFactionId = useActiveFactionId();
   const onDeckFactionId = useOnDeckFactionId();
+  const state = useGameState();
+  const showVoteBanner =
+    state.phase === "AGENDA" &&
+    state.votingStarted &&
+    state.activeplayer === factionId;
   const showOnDeckBanner =
     factionId === onDeckFactionId && factionId !== activeFactionId;
 
@@ -36,10 +42,20 @@ export default function FactionContent({
     }
   }
 
+  useEffect(() => {
+    setTabShown("planets");
+  }, [factionId]);
+
   return (
     <div className="flexColumn" style={{ gap: rem(8), width: "100%" }}>
+      {showVoteBanner ? <VoteTurnBanner factionId={factionId} /> : null}
       {showOnDeckBanner ? <OnDeckBanner factionId={factionId} /> : null}
-      <FactionSummary factionId={factionId} />
+      <FactionSummary
+        factionId={factionId}
+        countExhaustedPlanets={false}
+        countExhaustedPlanetValues={false}
+        showPlanetSummaryLabel
+      />
       <div
         style={{
           width: "100%",
@@ -137,7 +153,10 @@ export default function FactionContent({
               <Conditional appSection="PLANETS">
                 <TabBody id="planets" selectedId={tabShown}>
                   <LabeledLine />
-                  <PlanetTab factionId={factionId} />
+                  <PlanetTab
+                    active={tabShown === "planets"}
+                    factionId={factionId}
+                  />
                 </TabBody>
               </Conditional>
 
@@ -155,6 +174,41 @@ export default function FactionContent({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function VoteTurnBanner({ factionId }: { factionId: FactionId }) {
+  return (
+    <div
+      className="flexRow"
+      style={{
+        width: "calc(100% - 1rem)",
+        maxWidth: rem(760),
+        boxSizing: "border-box",
+        justifyContent: "center",
+        gap: rem(8),
+        padding: `${rem(6)} ${rem(12)}`,
+        border: "1px solid var(--blue-faction-color)",
+        borderRadius: rem(4),
+        backgroundColor: "rgba(64, 140, 255, 0.18)",
+        color: "var(--foreground-color)",
+        boxShadow: "0 0 12px rgba(64, 140, 255, 0.45)",
+        fontFamily: "var(--main-font)",
+        fontSize: rem(18),
+        lineHeight: 1.1,
+        textAlign: "center",
+      }}
+    >
+      <FactionComponents.Icon factionId={factionId} size={18} />
+      <span>
+        <FormattedMessage
+          id="Agenda.YourTurnToVote"
+          defaultMessage="Your turn to vote"
+          description="Warning shown to a player when their faction is the active agenda voter."
+        />
+      </span>
+      <FactionComponents.Icon factionId={factionId} size={18} />
     </div>
   );
 }

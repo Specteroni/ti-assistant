@@ -14,6 +14,7 @@ export function computePlanetSummaryValues(
   planets: Planet[],
   hasXxchaHeroResources: boolean,
   countExhaustedValues = false,
+  countExhaustedPlanets = true,
 ): PlanetSummaryValues {
   const values: PlanetSummaryValues = {
     numPlanets: 0,
@@ -32,12 +33,14 @@ export function computePlanetSummaryValues(
       continue;
     }
 
-    if (
-      !planet.attributes.includes("space-station") &&
-      !planet.attributes.includes("ocean") &&
-      !planet.attributes.includes("synthetic")
-    ) {
-      values.numPlanets++;
+    if (countExhaustedPlanets || planet.state !== "EXHAUSTED") {
+      if (
+        !planet.attributes.includes("space-station") &&
+        !planet.attributes.includes("ocean") &&
+        !planet.attributes.includes("synthetic")
+      ) {
+        values.numPlanets++;
+      }
     }
 
     if (countExhaustedValues || planet.state !== "EXHAUSTED") {

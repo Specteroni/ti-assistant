@@ -163,15 +163,69 @@ export function getOnDeckFaction(
       if (!state.activeplayer) {
         return undefined;
       }
-      const currentFaction =
-        state.activeplayer && state.activeplayer !== "None"
-          ? factions[state.activeplayer]
-          : undefined;
-      return Object.values(factions).find(
-        (faction) => faction.order === (currentFaction?.order ?? 0) + 1
+      if (state.activeplayer === "None") {
+        return undefined;
+      }
+      const votingOrder = getAgendaVotingOrder(state, factions);
+      const activeIndex = votingOrder.findIndex(
+        (faction) => faction.id === state.activeplayer
       );
+      if (activeIndex === -1) {
+        return undefined;
+      }
+      return votingOrder[activeIndex + 1];
     }
   }
+}
+
+export function getAgendaVotingOrder<
+  T extends { id: FactionId; name?: string; order?: number },
+>(
+  state: GameState,
+  factions: Partial<Record<FactionId, T>>
+) {
+  const speakerOrder = factions[state.speaker]?.order ?? 1;
+
+  return Object.values(factions).sort((a, b) => {
+    const aOrder = a.order ?? 0;
+    const bOrder = b.order ?? 0;
+    if (a.name === "Argent Flight" || a.id === "Argent Flight") {
+      return -1;
+    }
+    if (b.name === "Argent Flight" || b.id === "Argent Flight") {
+      return 1;
+    }
+    if (aOrder === speakerOrder) {
+      return 1;
+    }
+    if (bOrder === speakerOrder) {
+      return -1;
+    }
+    if (aOrder > speakerOrder && bOrder < speakerOrder) {
+      return -1;
+    }
+    if (aOrder < speakerOrder && bOrder > speakerOrder) {
+      return 1;
+    }
+    return aOrder - bOrder;
+  });
+}
+
+export function getUncommittedAgendaFactions(
+  state: GameState,
+  factions: Partial<Record<FactionId, { id: FactionId; name?: string; order?: number }>>
+) {
+  if (!state.activeplayer || state.activeplayer === "None") {
+    return [];
+  }
+  const votingOrder = getAgendaVotingOrder(state, factions);
+  const activeIndex = votingOrder.findIndex(
+    (faction) => faction.id === state.activeplayer
+  );
+  if (activeIndex === -1) {
+    return [];
+  }
+  return votingOrder.slice(activeIndex).map((faction) => faction.id);
 }
 
 /**

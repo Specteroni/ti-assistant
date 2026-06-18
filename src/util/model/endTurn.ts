@@ -172,6 +172,13 @@ export class UnendTurnHandler implements Handler {
 
   getActionLogAction(entry: ActionLogEntry<GameUpdateData>): ActionLogAction {
     if (entry.data.action === "END_TURN") {
+      if (
+        this.gameData.state.phase === "AGENDA" &&
+        this.data.event.prevFaction &&
+        this.data.event.prevFaction !== "None"
+      ) {
+        return "REWIND_AFTER_AND_DELETE";
+      }
       return "DELETE";
     }
     return "IGNORE";

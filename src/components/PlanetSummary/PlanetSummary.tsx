@@ -1,4 +1,4 @@
-import { CSSProperties } from "react";
+import { CSSProperties, ReactNode } from "react";
 import { useOptions, useViewOnly } from "../../context/dataHooks";
 import { useOceans } from "../../context/planetDataHooks";
 import { useDataUpdate } from "../../util/api/dataUpdate";
@@ -16,6 +16,8 @@ interface PlanetSummaryProps {
   planets: Planet[];
   hasXxchaHero: boolean;
   countExhaustedValues?: boolean;
+  countExhaustedPlanets?: boolean;
+  resourceLabel?: ReactNode;
 }
 
 // TODO: Figure out how to display oceans.
@@ -24,6 +26,8 @@ export default function PlanetSummary({
   planets,
   hasXxchaHero,
   countExhaustedValues = false,
+  countExhaustedPlanets = true,
+  resourceLabel,
 }: PlanetSummaryProps) {
   const dataUpdate = useDataUpdate();
   const oceans = useOceans();
@@ -49,62 +53,70 @@ export default function PlanetSummary({
     planets,
     hasXxchaHeroResources,
     countExhaustedValues,
+    countExhaustedPlanets,
+  );
+
+  const resourceSection = (
+    <div className={styles.ResourceSection}>
+      <div className={styles.PlanetTotal}>
+        {factionId === "Deepwrought Scholarate"
+          ? oceans.map((ocean, index) => {
+              const position: CSSProperties = getRadialPosition(
+                index,
+                /* numOptions= */ 9,
+                /* offset= */ -0.3,
+                /* circleSize= */ 26,
+                /* size= */ 4,
+              );
+              return (
+                <div
+                  key={ocean.id}
+                  title={ocean.name}
+                  className={`${styles.OceanElement} ${
+                    viewOnly ? styles.viewOnly : ""
+                  }`}
+                  style={{
+                    border: `1px solid ${ocean.owner ? "var(--foreground-color)" : "#444"}`,
+                    backgroundColor: ocean.owner
+                      ? "var(--foreground-color)"
+                      : "var(--background-color)",
+                    ...position,
+                  }}
+                  onClick={
+                    viewOnly
+                      ? undefined
+                      : () => {
+                          if (ocean.owner) {
+                            dataUpdate(
+                              Events.UnclaimPlanetEvent(factionId, ocean.id),
+                            );
+                          } else {
+                            dataUpdate(
+                              Events.ClaimPlanetEvent(factionId, ocean.id),
+                            );
+                          }
+                        }
+                  }
+                ></div>
+              );
+            })
+          : null}
+        {numPlanets}
+      </div>
+      <ResourcesIcon resources={resources} influence={influence} height={50} />
+    </div>
   );
 
   return (
     <div className={styles.PlanetSummary}>
-      <div className={styles.ResourceSection}>
-        <div className={styles.PlanetTotal}>
-          {factionId === "Deepwrought Scholarate"
-            ? oceans.map((ocean, index) => {
-                const position: CSSProperties = getRadialPosition(
-                  index,
-                  /* numOptions= */ 9,
-                  /* offset= */ -0.3,
-                  /* circleSize= */ 26,
-                  /* size= */ 4,
-                );
-                return (
-                  <div
-                    key={ocean.id}
-                    title={ocean.name}
-                    className={`${styles.OceanElement} ${
-                      viewOnly ? styles.viewOnly : ""
-                    }`}
-                    style={{
-                      border: `1px solid ${ocean.owner ? "var(--foreground-color)" : "#444"}`,
-                      backgroundColor: ocean.owner
-                        ? "var(--foreground-color)"
-                        : "var(--background-color)",
-                      ...position,
-                    }}
-                    onClick={
-                      viewOnly
-                        ? undefined
-                        : () => {
-                            if (ocean.owner) {
-                              dataUpdate(
-                                Events.UnclaimPlanetEvent(factionId, ocean.id),
-                              );
-                            } else {
-                              dataUpdate(
-                                Events.ClaimPlanetEvent(factionId, ocean.id),
-                              );
-                            }
-                          }
-                    }
-                  ></div>
-                );
-              })
-            : null}
-          {numPlanets}
+      {resourceLabel ? (
+        <div className={styles.ResourceLabelWrapper}>
+          <div className={styles.ResourceLabel}>{resourceLabel}</div>
+          {resourceSection}
         </div>
-        <ResourcesIcon
-          resources={resources}
-          influence={influence}
-          height={50}
-        />
-      </div>
+      ) : (
+        resourceSection
+      )}
       <div className={styles.CountSection}>
         <div className={styles.PlanetTypeGrid}>
           <div className={styles.centered}>{cultural || "-"}</div>

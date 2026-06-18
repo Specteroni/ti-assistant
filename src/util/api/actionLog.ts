@@ -50,6 +50,24 @@ export function getCurrentPhaseLogEntries(actionLog: ActionLog) {
   return currentPhase;
 }
 
+export function getCurrentAgendaLogEntries(actionLog: ActionLog) {
+  const currentAgenda: ActionLog = [];
+  for (const logEntry of actionLog) {
+    if (PHASE_BOUNDARIES.includes(logEntry.data.action)) {
+      break;
+    }
+    if (
+      logEntry.data.action === "HIDE_AGENDA" ||
+      logEntry.data.action === "RESOLVE_AGENDA"
+    ) {
+      break;
+    }
+    currentAgenda.push(logEntry);
+  }
+  currentAgenda.reverse();
+  return currentAgenda;
+}
+
 export function getCurrentPhasePreviousLogEntries(actionLog: ActionLog) {
   let currentTurn = true;
   const currentPhase: ActionLog = [];

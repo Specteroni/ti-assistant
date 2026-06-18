@@ -39,12 +39,16 @@ import { objectEntries, rem } from "./util/util";
 
 interface FactionSummaryProps {
   factionId: FactionId;
+  countExhaustedPlanets?: boolean;
   countExhaustedPlanetValues?: boolean;
+  showPlanetSummaryLabel?: boolean;
 }
 
 export function FactionSummary({
   factionId,
+  countExhaustedPlanets = true,
   countExhaustedPlanetValues = true,
+  showPlanetSummaryLabel = false,
 }: FactionSummaryProps) {
   const { settings } = use(SettingsContext);
 
@@ -56,17 +60,23 @@ export function FactionSummary({
       <FactionSummarySection
         factionId={factionId}
         section={settings["fs-left"]}
+        countExhaustedPlanets={countExhaustedPlanets}
         countExhaustedPlanetValues={countExhaustedPlanetValues}
+        showPlanetSummaryLabel={showPlanetSummaryLabel}
       />
       <FactionSummarySection
         factionId={factionId}
         section={settings["fs-center"]}
+        countExhaustedPlanets={countExhaustedPlanets}
         countExhaustedPlanetValues={countExhaustedPlanetValues}
+        showPlanetSummaryLabel={showPlanetSummaryLabel}
       />
       <FactionSummarySection
         factionId={factionId}
         section={settings["fs-right"]}
+        countExhaustedPlanets={countExhaustedPlanets}
         countExhaustedPlanetValues={countExhaustedPlanetValues}
+        showPlanetSummaryLabel={showPlanetSummaryLabel}
       />
       <Conditional appSection="COMMAND_COUNTERS">
         <FactionCCSummary factionId={factionId} />
@@ -78,11 +88,15 @@ export function FactionSummary({
 function FactionSummarySection({
   factionId,
   section,
+  countExhaustedPlanets,
   countExhaustedPlanetValues,
+  showPlanetSummaryLabel,
 }: {
   factionId: FactionId;
   section: SummarySection;
+  countExhaustedPlanets: boolean;
   countExhaustedPlanetValues: boolean;
+  showPlanetSummaryLabel: boolean;
 }) {
   switch (section) {
     case "NONE":
@@ -95,7 +109,9 @@ function FactionSummarySection({
       return (
         <FactionPlanetSummary
           factionId={factionId}
+          countExhaustedPlanets={countExhaustedPlanets}
           countExhaustedValues={countExhaustedPlanetValues}
+          showLabel={showPlanetSummaryLabel}
         />
       );
     case "TIMER":
@@ -346,10 +362,14 @@ function ObjectiveDots({ factionId }: { factionId: FactionId }) {
 
 function FactionPlanetSummary({
   factionId,
+  countExhaustedPlanets,
   countExhaustedValues,
+  showLabel,
 }: {
   factionId: FactionId;
+  countExhaustedPlanets: boolean;
   countExhaustedValues: boolean;
+  showLabel: boolean;
 }) {
   const attachments = useAttachments();
   const xxekirGrom = useLeader("Xxekir Grom");
@@ -373,7 +393,17 @@ function FactionPlanetSummary({
       factionId={factionId}
       planets={updatedPlanets}
       hasXxchaHero={hasXxchaHero}
+      countExhaustedPlanets={countExhaustedPlanets}
       countExhaustedValues={countExhaustedValues}
+      resourceLabel={
+        showLabel ? (
+          <FormattedMessage
+            id="FactionSummary.Planets.Remaining"
+            description="Label above the faction planet summary when it is showing remaining ready planet values."
+            defaultMessage="Remaining"
+          />
+        ) : undefined
+      }
     />
   );
 }

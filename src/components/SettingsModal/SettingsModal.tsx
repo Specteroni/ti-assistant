@@ -260,6 +260,35 @@ function SettingsModalContent() {
                 </ChipGroup>
               </LabeledDiv>
             </div>
+            <div style={{ width: "fit-content" }}>
+              <LabeledDiv
+                label="Faction Planet View"
+                innerStyle={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  gap: rem(4),
+                }}
+              >
+                <ChipGroup>
+                  <Chip
+                    selected={localSettings["faction-planet-view"] === "CLASSIC"}
+                    toggleFn={() =>
+                      updateLocalSetting("faction-planet-view", "CLASSIC")
+                    }
+                  >
+                    Rows
+                  </Chip>
+                  <Chip
+                    selected={localSettings["faction-planet-view"] === "GRID"}
+                    toggleFn={() =>
+                      updateLocalSetting("faction-planet-view", "GRID")
+                    }
+                  >
+                    Grid
+                  </Chip>
+                </ChipGroup>
+              </LabeledDiv>
+            </div>
             <div className="flexRow">
               <div>
                 Left:

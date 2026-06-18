@@ -70,6 +70,29 @@ export function updateActionLog(
         newEntry.gameSeconds = gameTime;
         actionLog.splice(0, i + 1, newEntry);
         return;
+      case "REWIND_AFTER_AND_DELETE": {
+        let deleteCount = 1;
+        for (let j = i + 1; j < actionLog.length; ++j) {
+          const entry = actionLog[j];
+          if (!entry) {
+            continue;
+          }
+          if (
+            TURN_BOUNDARIES.includes(entry.data.action) ||
+            entry.data.action === "START_VOTING"
+          ) {
+            break;
+          }
+          const undoHandler = getOppositeHandler(handler.gameData, entry.data);
+          if (!undoHandler) {
+            continue;
+          }
+          updateGameData(currentData, undoHandler.getUpdates());
+          deleteCount++;
+        }
+        actionLog.splice(i, deleteCount);
+        return;
+      }
     }
   }
 
