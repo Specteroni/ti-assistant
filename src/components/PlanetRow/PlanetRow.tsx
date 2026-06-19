@@ -47,6 +47,7 @@ interface PlanetRowProps {
   planet: Planet;
   factionId?: FactionId;
   addPlanet?: (planetId: PlanetId) => void;
+  canToggleState?: boolean;
   removePlanet?: (planetId: PlanetId) => void;
   opts?: PlanetRowOpts;
   prevOwner?: FactionId;
@@ -60,6 +61,13 @@ export function usePlanetExhaustion(planet: Planet) {
   const xxekirGrom = useLeader("Xxekir Grom");
 
   const exhausted = planet.state === "EXHAUSTED";
+  const factionVotes =
+    phase === "AGENDA" && planet.owner
+      ? getFactionVotes(currentTurn, planet.owner)
+      : undefined;
+  const canToggle =
+    phase !== "AGENDA" ||
+    (!!factionVotes?.target && factionVotes.target !== "Abstain");
 
   function getPlanetVotes() {
     let planetVotes = planet.influence;
@@ -74,6 +82,10 @@ export function usePlanetExhaustion(planet: Planet) {
   }
 
   async function toggle() {
+    if (!canToggle) {
+      return;
+    }
+
     const nextState = exhausted ? "READIED" : "EXHAUSTED";
     await dataUpdate(Events.UpdatePlanetStateEvent(planet.id, nextState));
 
@@ -81,7 +93,6 @@ export function usePlanetExhaustion(planet: Planet) {
       return;
     }
 
-    const factionVotes = getFactionVotes(currentTurn, planet.owner);
     if (!factionVotes?.target || factionVotes.target === "Abstain") {
       return;
     }
@@ -115,6 +126,7 @@ export function usePlanetExhaustion(planet: Planet) {
   }
 
   return {
+    canToggle,
     exhausted,
     toggle,
   };
@@ -129,6 +141,7 @@ export default function PlanetRow({
   factionId,
   removePlanet,
   addPlanet,
+  canToggleState = true,
   opts = {},
   prevOwner,
 }: PlanetRowProps) {
@@ -347,7 +360,9 @@ export default function PlanetRow({
               compact
               selected={planetExhaustion.exhausted}
               toggleFn={planetExhaustion.toggle}
-              disabled={viewOnly}
+              disabled={
+                viewOnly || !canToggleState || !planetExhaustion.canToggle
+              }
             >
               <span
                 style={{

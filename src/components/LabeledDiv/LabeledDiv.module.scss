@@ -11,6 +11,10 @@
   align-items: flex-start;
 }
 
+.LabeledDiv:has(:global(.hoverParent.hover)) {
+  z-index: 1100;
+}
+
 .LabeledDiv .blurBox {
   z-index: -2;
   box-sizing: border-box;

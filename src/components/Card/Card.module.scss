@@ -13,6 +13,10 @@
   width: 100%;
 }
 
+.Card:has(:global(.hoverParent.hover)) {
+  z-index: 1100;
+}
+
 .CardBody {
   display: flex;
   position: relative;

@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import Conditional from "../../../../../../../src/components/Conditional/Conditional";
 import FactionComponents from "../../../../../../../src/components/FactionComponents/FactionComponents";
 import LabeledLine from "../../../../../../../src/components/LabeledLine/LabeledLine";
+import { SettingsContext } from "../../../../../../../src/context/contexts";
 import {
   useActiveFactionId,
   useOnDeckFactionId,
@@ -26,7 +27,9 @@ export default function FactionContent({
   const [tabShown, setTabShown] = useState<string>("planets");
   const activeFactionId = useActiveFactionId();
   const onDeckFactionId = useOnDeckFactionId();
+  const { settings } = useContext(SettingsContext);
   const state = useGameState();
+  const showPlayerViewIndicator = settings["player-view-faction"] === factionId;
   const showVoteBanner =
     state.phase === "AGENDA" &&
     state.votingStarted &&
@@ -50,6 +53,9 @@ export default function FactionContent({
     <div className="flexColumn" style={{ gap: rem(8), width: "100%" }}>
       {showVoteBanner ? <VoteTurnBanner factionId={factionId} /> : null}
       {showOnDeckBanner ? <OnDeckBanner factionId={factionId} /> : null}
+      {showPlayerViewIndicator ? (
+        <PlayerViewIndicator factionId={factionId} />
+      ) : null}
       <FactionSummary
         factionId={factionId}
         countExhaustedPlanets={false}
@@ -174,6 +180,39 @@ export default function FactionContent({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function PlayerViewIndicator({ factionId }: { factionId: FactionId }) {
+  return (
+    <div
+      className="flexRow"
+      style={{
+        width: "fit-content",
+        maxWidth: "calc(100% - 1rem)",
+        boxSizing: "border-box",
+        justifyContent: "center",
+        gap: rem(6),
+        padding: `${rem(4)} ${rem(10)}`,
+        border: "1px solid var(--neutral-border)",
+        borderRadius: rem(4),
+        backgroundColor: "var(--interactive-bg)",
+        color: "var(--foreground-color)",
+        fontFamily: "var(--main-font)",
+        fontSize: rem(14),
+        lineHeight: 1.1,
+        textAlign: "center",
+      }}
+    >
+      <FactionComponents.Icon factionId={factionId} size={16} />
+      <span>
+        <FormattedMessage
+          id="PlayerView.YourView"
+          defaultMessage="Your player view"
+          description="Indicator showing this browser is assigned to the current player's faction view."
+        />
+      </span>
     </div>
   );
 }

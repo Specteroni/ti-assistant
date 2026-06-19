@@ -8,7 +8,10 @@ import {
 } from "../../../../../../../src/context/dataHooks";
 import { useFaction } from "../../../../../../../src/context/factionDataHooks";
 import { useObjectives } from "../../../../../../../src/context/objectiveDataHooks";
-import { useRound } from "../../../../../../../src/context/stateDataHooks";
+import {
+  useRound,
+  useSpeaker,
+} from "../../../../../../../src/context/stateDataHooks";
 import { ClientOnlyHoverMenu } from "../../../../../../../src/HoverMenu";
 import { SelectableRow } from "../../../../../../../src/SelectableRow";
 import {
@@ -32,6 +35,7 @@ export default function FactionStatusPhase({
   const objectives = useObjectives();
   const planets = usePlanets();
   const round = useRound();
+  const speaker = useSpeaker();
   const viewOnly = useViewOnly();
 
   const type: ObjectiveType = round < 4 ? "STAGE ONE" : "STAGE TWO";
@@ -91,6 +95,7 @@ export default function FactionStatusPhase({
   const revealedObjectiveObj = revealedObjective
     ? objectives[revealedObjective]
     : undefined;
+  const isSpeaker = factionId === speaker;
   return (
     <>
       <div
@@ -229,48 +234,23 @@ export default function FactionStatusPhase({
           </ClientOnlyHoverMenu>
         )}
       </div>
-      <LabeledDiv
-        label={
-          <FormattedMessage
-            id="5R8kPv"
-            description="Label for a section for actions by the speaker."
-            defaultMessage="Speaker Actions"
-          />
-        }
-      >
-        {revealedObjectiveObj ? (
-          <LabeledDiv
-            label={
-              <FormattedMessage
-                id="IfyaDZ"
-                description="A label for revealed objectives."
-                defaultMessage="Revealed {type} {count, plural, one {Objective} other {Objectives}}"
-                values={{
-                  count: 1,
-                  type:
-                    round > 3
-                      ? objectiveTypeString("STAGE TWO", intl)
-                      : objectiveTypeString("STAGE ONE", intl),
-                }}
-              />
-            }
-            blur
-          >
-            <ObjectiveRow
-              objectiveId={revealedObjectiveObj.id}
-              removeObjective={() =>
-                dataUpdate(Events.HideObjectiveEvent(revealedObjectiveObj.id))
-              }
+      {isSpeaker ? (
+        <LabeledDiv
+          label={
+            <FormattedMessage
+              id="5R8kPv"
+              description="Label for a section for actions by the speaker."
+              defaultMessage="Speaker Actions"
             />
-          </LabeledDiv>
-        ) : (
-          <div className="flexRow" style={{ whiteSpace: "nowrap" }}>
-            <ClientOnlyHoverMenu
+          }
+        >
+          {revealedObjectiveObj ? (
+            <LabeledDiv
               label={
                 <FormattedMessage
-                  id="lDBTCO"
-                  description="Instruction telling the speaker to reveal objectives."
-                  defaultMessage="Reveal {count, number} {type} {count, plural, one {objective} other {objectives}}"
+                  id="IfyaDZ"
+                  description="A label for revealed objectives."
+                  defaultMessage="Revealed {type} {count, plural, one {Objective} other {Objectives}}"
                   values={{
                     count: 1,
                     type:
@@ -280,48 +260,78 @@ export default function FactionStatusPhase({
                   }}
                 />
               }
-              style={{ maxHeight: rem(400) }}
+              blur
             >
-              <div
-                className="flexRow"
-                style={{
-                  maxWidth: "85vw",
-                  gap: rem(4),
-                  whiteSpace: "nowrap",
-                  padding: rem(8),
-                  display: "grid",
-                  gridAutoFlow: "column",
-                  gridTemplateRows: "repeat(10, auto)",
-                  alignItems: "stretch",
-                  justifyContent: "flex-start",
-                  overflowX: "auto",
-                }}
+              <ObjectiveRow
+                objectiveId={revealedObjectiveObj.id}
+                removeObjective={() =>
+                  dataUpdate(Events.HideObjectiveEvent(revealedObjectiveObj.id))
+                }
+              />
+            </LabeledDiv>
+          ) : (
+            <div className="flexRow" style={{ whiteSpace: "nowrap" }}>
+              <ClientOnlyHoverMenu
+                label={
+                  <FormattedMessage
+                    id="lDBTCO"
+                    description="Instruction telling the speaker to reveal objectives."
+                    defaultMessage="Reveal {count, number} {type} {count, plural, one {objective} other {objectives}}"
+                    values={{
+                      count: 1,
+                      type:
+                        round > 3
+                          ? objectiveTypeString("STAGE TWO", intl)
+                          : objectiveTypeString("STAGE ONE", intl),
+                    }}
+                  />
+                }
+                style={{ maxHeight: rem(400) }}
               >
-                {Object.values(revealableObjectives)
-                  .filter((objective) => {
-                    return (
-                      objective.type === (round > 3 ? "STAGE TWO" : "STAGE ONE")
-                    );
-                  })
-                  .map((objective) => {
-                    return (
-                      <button
-                        key={objective.id}
-                        style={{ writingMode: "horizontal-tb" }}
-                        onClick={() =>
-                          dataUpdate(Events.RevealObjectiveEvent(objective.id))
-                        }
-                        disabled={viewOnly}
-                      >
-                        {objective.name}
-                      </button>
-                    );
-                  })}
-              </div>
-            </ClientOnlyHoverMenu>
-          </div>
-        )}
-      </LabeledDiv>
+                <div
+                  className="flexRow"
+                  style={{
+                    maxWidth: "85vw",
+                    gap: rem(4),
+                    whiteSpace: "nowrap",
+                    padding: rem(8),
+                    display: "grid",
+                    gridAutoFlow: "column",
+                    gridTemplateRows: "repeat(10, auto)",
+                    alignItems: "stretch",
+                    justifyContent: "flex-start",
+                    overflowX: "auto",
+                  }}
+                >
+                  {Object.values(revealableObjectives)
+                    .filter((objective) => {
+                      return (
+                        objective.type ===
+                        (round > 3 ? "STAGE TWO" : "STAGE ONE")
+                      );
+                    })
+                    .map((objective) => {
+                      return (
+                        <button
+                          key={objective.id}
+                          style={{ writingMode: "horizontal-tb" }}
+                          onClick={() =>
+                            dataUpdate(
+                              Events.RevealObjectiveEvent(objective.id),
+                            )
+                          }
+                          disabled={viewOnly}
+                        >
+                          {objective.name}
+                        </button>
+                      );
+                    })}
+                </div>
+              </ClientOnlyHoverMenu>
+            </div>
+          )}
+        </LabeledDiv>
+      ) : null}
     </>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { FormattedMessage, useIntl } from "react-intl";
 import FactionCircle from "../../../../../src/components/FactionCircle/FactionCircle";
 import {
@@ -39,7 +39,7 @@ import { statusPhaseComplete } from "../main/phase/status/StatusPhase";
 import { useDataUpdate } from "../../../../../src/util/api/dataUpdate";
 import { Events } from "../../../../../src/util/api/events";
 
-function NextPhaseButtons({}) {
+function NextPhaseButtons({ factionId }: { factionId: FactionId }) {
   const currentTurn = useCurrentTurn();
   const dataUpdate = useDataUpdate();
   const factions = useFactions();
@@ -49,6 +49,7 @@ function NextPhaseButtons({}) {
   const viewOnly = useViewOnly();
 
   const intl = useIntl();
+  const isSpeaker = factionId === state.speaker;
 
   const revealedObjectives = getLogEntries<RevealObjectiveData>(
     currentTurn,
@@ -57,6 +58,9 @@ function NextPhaseButtons({}) {
 
   switch (state.phase) {
     case "SETUP":
+      if (!isSpeaker) {
+        return null;
+      }
       return (
         <div className="flexColumn" style={{ marginTop: rem(8) }}>
           <LockedButtons
@@ -79,10 +83,14 @@ function NextPhaseButtons({}) {
         </div>
       );
     case "STRATEGY":
+      if (!isSpeaker) {
+        return null;
+      }
       if (state.activeplayer === "None") {
         return (
           <div className="flexColumn" style={{ marginTop: rem(8) }}>
             <button
+              className="primary"
               onClick={() => {
                 dataUpdate(Events.AdvancePhaseEvent());
               }}
@@ -102,6 +110,9 @@ function NextPhaseButtons({}) {
       }
       return null;
     case "ACTION":
+      if (!isSpeaker) {
+        return null;
+      }
       return (
         <div className="flexColumn" style={{ marginTop: rem(8) }}>
           <LockedButtons
@@ -142,21 +153,26 @@ function NextPhaseButtons({}) {
           },
         });
       }
-      buttons.push({
-        text: intl.formatMessage(
-          {
-            id: "8/h2ME",
-            defaultMessage: "Advance to {phase} Phase",
-            description:
-              "Text on a button that will advance the game to a specific phase.",
+      if (isSpeaker) {
+        buttons.push({
+          text: intl.formatMessage(
+            {
+              id: "8/h2ME",
+              defaultMessage: "Advance to {phase} Phase",
+              description:
+                "Text on a button that will advance the game to a specific phase.",
+            },
+            { phase: phaseString("AGENDA", intl) },
+          ),
+          primary: true,
+          onClick: () => {
+            dataUpdate(Events.AdvancePhaseEvent());
           },
-          { phase: phaseString("AGENDA", intl) },
-        ),
-        primary: true,
-        onClick: () => {
-          dataUpdate(Events.AdvancePhaseEvent());
-        },
-      });
+        });
+      }
+      if (buttons.length === 0) {
+        return null;
+      }
       return (
         <div className="flexColumn" style={{ marginTop: rem(8) }}>
           <LockedButtons
@@ -193,7 +209,16 @@ function NextPhaseButtons({}) {
   return null;
 }
 
+function useCurrentFactionIdFromPath() {
+  const pathname = usePathname();
+  const pathParts = pathname.split("/").filter(Boolean);
+  const gameIndex = pathParts.indexOf("game");
+  const factionId = gameIndex >= 0 ? pathParts[gameIndex + 2] : undefined;
+  return factionId ? (decodeURIComponent(factionId) as FactionId) : undefined;
+}
+
 export default function FactionsSection({}) {
+  const factionId = useCurrentFactionIdFromPath();
   const phase = usePhase();
   const finalPhase = useFinalPhase();
 
@@ -260,7 +285,7 @@ export default function FactionsSection({}) {
         fontSize: rem(18),
       }}
     >
-      <NextPhaseButtons />
+      {factionId ? <NextPhaseButtons factionId={factionId} /> : null}
       {orderTitle}
       <div
         className="flexRow"

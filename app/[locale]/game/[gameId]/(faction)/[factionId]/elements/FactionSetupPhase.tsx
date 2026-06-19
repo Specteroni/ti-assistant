@@ -8,6 +8,7 @@ import {
   useViewOnly,
 } from "../../../../../../../src/context/dataHooks";
 import { useObjectives } from "../../../../../../../src/context/objectiveDataHooks";
+import { useSpeaker } from "../../../../../../../src/context/stateDataHooks";
 import { ClientOnlyHoverMenu } from "../../../../../../../src/HoverMenu";
 import { getLogEntries } from "../../../../../../../src/util/actionLog";
 import { useDataUpdate } from "../../../../../../../src/util/api/dataUpdate";
@@ -23,6 +24,7 @@ export default function FactionSetupPhase({
   const dataUpdate = useDataUpdate();
   const gameId = useGameId();
   const objectives = useObjectives();
+  const speaker = useSpeaker();
   const viewOnly = useViewOnly();
 
   const revealedObjectiveIds = getLogEntries<RevealObjectiveData>(
@@ -35,6 +37,7 @@ export default function FactionSetupPhase({
       !revealedObjectiveIds.includes(objective.id)
     );
   });
+  const isSpeaker = factionId === speaker;
 
   return (
     <>
@@ -51,86 +54,88 @@ export default function FactionSetupPhase({
           <StartingComponents factionId={factionId} />
         </div>
       </LabeledDiv>
-      <LabeledDiv
-        label={
-          <FormattedMessage
-            id="5R8kPv"
-            description="Label for a section for actions by the speaker."
-            defaultMessage="Speaker Actions"
-          />
-        }
-      >
-        {revealedObjectiveIds.length > 0 ? (
-          <LabeledDiv
-            label={
-              <FormattedMessage
-                id="RBlsAq"
-                description="A label for the stage I objectives that have been revealed"
-                defaultMessage="Revealed stage I {count, plural, one {objective} other {objectives}}"
-                values={{ count: revealedObjectiveIds.length }}
-              />
-            }
-          >
-            {revealedObjectiveIds.map((objectiveId) => {
-              return (
-                <ObjectiveRow
-                  key={objectiveId}
-                  objectiveId={objectiveId}
-                  removeObjective={() =>
-                    dataUpdate(Events.HideObjectiveEvent(objectiveId))
-                  }
+      {isSpeaker ? (
+        <LabeledDiv
+          label={
+            <FormattedMessage
+              id="5R8kPv"
+              description="Label for a section for actions by the speaker."
+              defaultMessage="Speaker Actions"
+            />
+          }
+        >
+          {revealedObjectiveIds.length > 0 ? (
+            <LabeledDiv
+              label={
+                <FormattedMessage
+                  id="RBlsAq"
+                  description="A label for the stage I objectives that have been revealed"
+                  defaultMessage="Revealed stage I {count, plural, one {objective} other {objectives}}"
+                  values={{ count: revealedObjectiveIds.length }}
                 />
-              );
-            })}
-          </LabeledDiv>
-        ) : null}
-        {revealedObjectiveIds.length < 2 ? (
-          <ClientOnlyHoverMenu
-            label={
-              <FormattedMessage
-                id="6L07nG"
-                description="Text telling the user to reveal an objective."
-                defaultMessage="Reveal Objective"
-              />
-            }
-          >
-            <div
-              className="flexRow"
-              style={{
-                display: "grid",
-                gridAutoFlow: "column",
-                gridTemplateRows: "repeat(10, auto)",
-                justifyContent: "flex-start",
-                whiteSpace: "nowrap",
-                padding: rem(8),
-                gap: rem(4),
-                alignItems: "stretch",
-                maxWidth: "85vw",
-                overflowX: "auto",
-              }}
+              }
             >
-              {Object.values(availableObjectives)
-                .filter((objective) => {
-                  return objective.type === "STAGE ONE";
-                })
-                .map((objective) => {
-                  return (
-                    <button
-                      key={objective.id}
-                      style={{ writingMode: "horizontal-tb" }}
-                      onClick={() =>
-                        dataUpdate(Events.RevealObjectiveEvent(objective.id))
-                      }
-                      disabled={viewOnly}
-                    >
-                      {objective.name}
-                    </button>
-                  );
-                })}
-            </div>
-          </ClientOnlyHoverMenu>
-        ) : null}
-      </LabeledDiv>
+              {revealedObjectiveIds.map((objectiveId) => {
+                return (
+                  <ObjectiveRow
+                    key={objectiveId}
+                    objectiveId={objectiveId}
+                    removeObjective={() =>
+                      dataUpdate(Events.HideObjectiveEvent(objectiveId))
+                    }
+                  />
+                );
+              })}
+            </LabeledDiv>
+          ) : null}
+          {revealedObjectiveIds.length < 2 ? (
+            <ClientOnlyHoverMenu
+              label={
+                <FormattedMessage
+                  id="6L07nG"
+                  description="Text telling the user to reveal an objective."
+                  defaultMessage="Reveal Objective"
+                />
+              }
+            >
+              <div
+                className="flexRow"
+                style={{
+                  display: "grid",
+                  gridAutoFlow: "column",
+                  gridTemplateRows: "repeat(10, auto)",
+                  justifyContent: "flex-start",
+                  whiteSpace: "nowrap",
+                  padding: rem(8),
+                  gap: rem(4),
+                  alignItems: "stretch",
+                  maxWidth: "85vw",
+                  overflowX: "auto",
+                }}
+              >
+                {Object.values(availableObjectives)
+                  .filter((objective) => {
+                    return objective.type === "STAGE ONE";
+                  })
+                  .map((objective) => {
+                    return (
+                      <button
+                        key={objective.id}
+                        style={{ writingMode: "horizontal-tb" }}
+                        onClick={() =>
+                          dataUpdate(Events.RevealObjectiveEvent(objective.id))
+                        }
+                        disabled={viewOnly}
+                      >
+                        {objective.name}
+                      </button>
+                    );
+                  })}
+              </div>
+            </ClientOnlyHoverMenu>
+          ) : null}
+        </LabeledDiv>
+      ) : null}
     </>
   );
 }

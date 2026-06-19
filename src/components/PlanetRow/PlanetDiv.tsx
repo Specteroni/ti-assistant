@@ -41,10 +41,20 @@ function TypeOrFactionIcon({ planet }: { planet: Planet }) {
   return null;
 }
 
-export default function PlanetDiv({ planet }: { planet: Planet }) {
+export default function PlanetDiv({
+  canToggleState = true,
+  planet,
+}: {
+  canToggleState?: boolean;
+  planet: Planet;
+}) {
   const viewOnly = useViewOnly();
   const planetExhaustion = usePlanetExhaustion(planet);
-  const canToggleExhaustion = !viewOnly && canTogglePlanetExhaustion(planet);
+  const canToggleExhaustion =
+    canToggleState &&
+    !viewOnly &&
+    canTogglePlanetExhaustion(planet) &&
+    planetExhaustion.canToggle;
 
   let indexStart = 4;
 
@@ -198,7 +208,7 @@ export default function PlanetDiv({ planet }: { planet: Planet }) {
             </div>
           );
         })}
-        <ExhaustButton planet={planet} />
+        <ExhaustButton canToggleState={canToggleState} planet={planet} />
         <ChangeOwnerButton planet={planet} />
         <AttachButton planet={planet} />
       </div>
@@ -287,9 +297,15 @@ function StructureSection({ planet }: { planet: Planet }) {
   );
 }
 
-function ExhaustButton({ planet }: { planet: Planet }) {
+function ExhaustButton({
+  canToggleState,
+  planet,
+}: {
+  canToggleState: boolean;
+  planet: Planet;
+}) {
   const viewOnly = useViewOnly();
-  const { exhausted, toggle } = usePlanetExhaustion(planet);
+  const { canToggle, exhausted, toggle } = usePlanetExhaustion(planet);
 
   if (!planet.owner || planet.state === "PURGED") {
     return null;
@@ -323,7 +339,7 @@ function ExhaustButton({ planet }: { planet: Planet }) {
         event.stopPropagation();
         toggle();
       }}
-      disabled={viewOnly}
+      disabled={viewOnly || !canToggleState || !canToggle}
       title={exhausted ? "Ready planet" : "Exhaust planet"}
     >
       <FlipSVG />

@@ -30,6 +30,8 @@ import {
 } from "../../../../../../../src/util/planets";
 import { rem } from "../../../../../../../src/util/util";
 
+type CalculatorMode = "EXHAUST" | "READY";
+
 export default function PlanetTab({
   active,
   factionId,
@@ -77,13 +79,24 @@ export default function PlanetTab({
   const spentPlanets = updatedPlanets.filter((planet) => {
     return planet.state === "EXHAUSTED" && !spentBaselineSet.has(planet.id);
   });
+  const readiedPlanets = updatedPlanets.filter((planet) => {
+    return planet.state !== "EXHAUSTED" && spentBaselineSet.has(planet.id);
+  });
+  const calculatorMode: CalculatorMode | undefined =
+    spentPlanets.length > 0
+      ? "EXHAUST"
+      : readiedPlanets.length > 0
+        ? "READY"
+        : undefined;
+  const calculatorPlanets =
+    calculatorMode === "READY" ? readiedPlanets : spentPlanets;
   const { resources: spentResources, influence: spentInfluence } =
     computePlanetSummaryValues(
-      spentPlanets,
+      calculatorPlanets,
       hasXxchaHeroResources,
       /* countExhaustedValues= */ true,
     );
-  const numSpentPlanets = spentPlanets.filter((planet) => {
+  const numSpentPlanets = calculatorPlanets.filter((planet) => {
     return (
       planet.state !== "PURGED" &&
       !planet.attributes.includes("space-station") &&
@@ -91,7 +104,7 @@ export default function PlanetTab({
       !planet.attributes.includes("synthetic")
     );
   }).length;
-  const numSpentTechSkips = spentPlanets.filter((planet) => {
+  const numSpentTechSkips = calculatorPlanets.filter((planet) => {
     return planet.attributes.some((attribute) => attribute.endsWith("skip"));
   }).length;
   const agendaVoteMode = state.phase === "AGENDA";
@@ -113,6 +126,21 @@ export default function PlanetTab({
 
   function handleCalculatorAction() {
     resetCalculator();
+  }
+
+  function canTogglePlanetForCalculator(planet: Planet) {
+    if (!calculatorMode) {
+      return true;
+    }
+
+    const wasExhaustedAtBaseline = spentBaselineSet.has(planet.id);
+    const isExhausted = planet.state === "EXHAUSTED";
+
+    if (calculatorMode === "EXHAUST") {
+      return !isExhausted || !wasExhaustedAtBaseline;
+    }
+
+    return wasExhaustedAtBaseline;
   }
 
   useEffect(() => {
@@ -298,7 +326,7 @@ export default function PlanetTab({
               }}
               title="Update calculator baseline"
             >
-              Update
+              <CalculatorActionLabel mode={calculatorMode} />
             </button>
           </div>
           <PlanetValueCounter
@@ -315,11 +343,13 @@ export default function PlanetTab({
         <PlanetGridSections
           activePlanets={activePlanets}
           alreadyExhaustedPlanets={alreadyExhaustedPlanets}
+          canTogglePlanet={canTogglePlanetForCalculator}
         />
       ) : (
         <PlanetRowSections
           activePlanets={activePlanets}
           alreadyExhaustedPlanets={alreadyExhaustedPlanets}
+          canTogglePlanet={canTogglePlanetForCalculator}
           factionId={factionId}
           removePlanet={(planetId) =>
             dataUpdate(Events.UnclaimPlanetEvent(factionId, planetId))
@@ -333,9 +363,11 @@ export default function PlanetTab({
 function PlanetGridSections({
   activePlanets,
   alreadyExhaustedPlanets,
+  canTogglePlanet,
 }: {
   activePlanets: Planet[];
   alreadyExhaustedPlanets: Planet[];
+  canTogglePlanet: (planet: Planet) => boolean;
 }) {
   return (
     <div
@@ -345,18 +377,27 @@ function PlanetGridSections({
         width: "100%",
       }}
     >
-      <PlanetGrid planets={activePlanets} />
+      <PlanetGrid canTogglePlanet={canTogglePlanet} planets={activePlanets} />
       {alreadyExhaustedPlanets.length > 0 ? (
         <>
           <AlreadyExhaustedDivider />
-          <PlanetGrid planets={alreadyExhaustedPlanets} />
+          <PlanetGrid
+            canTogglePlanet={canTogglePlanet}
+            planets={alreadyExhaustedPlanets}
+          />
         </>
       ) : null}
     </div>
   );
 }
 
-function PlanetGrid({ planets }: { planets: Planet[] }) {
+function PlanetGrid({
+  canTogglePlanet,
+  planets,
+}: {
+  canTogglePlanet: (planet: Planet) => boolean;
+  planets: Planet[];
+}) {
   return (
     <div
       style={{
@@ -371,7 +412,13 @@ function PlanetGrid({ planets }: { planets: Planet[] }) {
       }}
     >
       {planets.map((planet) => {
-        return <PlanetDiv key={planet.id} planet={planet} />;
+        return (
+          <PlanetDiv
+            key={planet.id}
+            canToggleState={canTogglePlanet(planet)}
+            planet={planet}
+          />
+        );
       })}
     </div>
   );
@@ -380,11 +427,13 @@ function PlanetGrid({ planets }: { planets: Planet[] }) {
 function PlanetRowSections({
   activePlanets,
   alreadyExhaustedPlanets,
+  canTogglePlanet,
   factionId,
   removePlanet,
 }: {
   activePlanets: Planet[];
   alreadyExhaustedPlanets: Planet[];
+  canTogglePlanet: (planet: Planet) => boolean;
   factionId: FactionId;
   removePlanet: (planetId: PlanetId) => void;
 }) {
@@ -398,6 +447,7 @@ function PlanetRowSections({
       }}
     >
       <PlanetRows
+        canTogglePlanet={canTogglePlanet}
         factionId={factionId}
         planets={activePlanets}
         removePlanet={removePlanet}
@@ -406,6 +456,7 @@ function PlanetRowSections({
         <>
           <AlreadyExhaustedDivider />
           <PlanetRows
+            canTogglePlanet={canTogglePlanet}
             factionId={factionId}
             planets={alreadyExhaustedPlanets}
             removePlanet={removePlanet}
@@ -417,10 +468,12 @@ function PlanetRowSections({
 }
 
 function PlanetRows({
+  canTogglePlanet,
   factionId,
   planets,
   removePlanet,
 }: {
+  canTogglePlanet: (planet: Planet) => boolean;
   factionId: FactionId;
   planets: Planet[];
   removePlanet: (planetId: PlanetId) => void;
@@ -431,6 +484,7 @@ function PlanetRows({
         return (
           <PlanetRow
             key={planet.id}
+            canToggleState={canTogglePlanet(planet)}
             factionId={factionId}
             planet={planet}
             removePlanet={removePlanet}
@@ -504,6 +558,40 @@ function CounterLabel({ children }: { children: string }) {
     >
       {children}
     </span>
+  );
+}
+
+function CalculatorActionLabel({
+  mode,
+}: {
+  mode: CalculatorMode | undefined;
+}) {
+  if (mode === "EXHAUST") {
+    return (
+      <FormattedMessage
+        id="PlanetTab.ExhaustCalculator"
+        defaultMessage="Exhaust"
+        description="Text on a calculator button that commits selected planet exhaustions."
+      />
+    );
+  }
+
+  if (mode === "READY") {
+    return (
+      <FormattedMessage
+        id="PlanetTab.UnexhaustCalculator"
+        defaultMessage="Unexhaust"
+        description="Text on a calculator button that commits selected planet readying."
+      />
+    );
+  }
+
+  return (
+    <FormattedMessage
+      id="PlanetTab.UpdateCalculator"
+      defaultMessage="Update"
+      description="Text on a calculator button that updates the planet calculator baseline."
+    />
   );
 }
 

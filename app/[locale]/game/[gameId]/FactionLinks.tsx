@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { CSSProperties } from "react";
+import { CSSProperties, useContext } from "react";
 import FactionComponents from "../../../../src/components/FactionComponents/FactionComponents";
+import { SettingsContext } from "../../../../src/context/contexts";
 import { useGameId } from "../../../../src/context/dataHooks";
 import { useFactionColors } from "../../../../src/context/factionDataHooks";
 import { useOrderedFactionIds } from "../../../../src/context/gameDataHooks";
@@ -21,12 +22,14 @@ export default function FactionLinks() {
 
 function FactionLink({ factionId }: { factionId: FactionId }) {
   const gameId = useGameId();
+  const { updateSetting } = useContext(SettingsContext);
   const colors = useFactionColors(factionId);
 
   return (
     <Link
       className="outline"
       href={`/game/${gameId}/${factionId}`}
+      onClick={() => updateSetting("player-view-faction", factionId)}
       style={
         {
           "--border-color": colors.border,

@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { CSSProperties, ReactNode } from "react";
 import { useIntl } from "react-intl";
 import { ClientOnlyHoverMenu } from "../../HoverMenu";
 import {
@@ -127,6 +127,7 @@ interface TechSelectHoverMenuProps {
   factionId: FactionId;
   ignorePrereqs?: boolean;
   label: string;
+  labelStyle?: CSSProperties;
   techs: Tech[];
   selectTech: (tech: Tech) => void;
 }
@@ -136,6 +137,7 @@ export default function TechSelectHoverMenu({
   ignorePrereqs = false,
   techs,
   label,
+  labelStyle,
   selectTech,
 }: TechSelectHoverMenuProps) {
   const attachments = useAttachments();
@@ -183,6 +185,7 @@ export default function TechSelectHoverMenu({
   return (
     <ClientOnlyHoverMenu
       label={label}
+      labelStyle={labelStyle}
       style={{ whiteSpace: "nowrap" }}
       buttonStyle={{ fontSize: rem(14) }}
       renderProps={(outerCloseFn) => (

@@ -113,6 +113,26 @@ function getMapStyles(numFactions: number) {
   return mapStyles;
 }
 
+const THUNDERS_EDGE_REQUIRED_EVENT_MECHANICS = new Set<EventId>([
+  "Call of the Void",
+  "Rapid Mobilization",
+]);
+
+function canSelectEventWithoutExpansion(
+  event: TIEvent,
+  selectedExpansions: Set<Expansion>,
+) {
+  if (selectedExpansions.has(event.expansion)) {
+    return true;
+  }
+
+  if (event.expansion !== "THUNDERS EDGE") {
+    return false;
+  }
+
+  return !THUNDERS_EDGE_REQUIRED_EVENT_MECHANICS.has(event.id);
+}
+
 function MobileOptions({
   updatePlayerCount,
   toggleOption,
@@ -165,7 +185,7 @@ function MobileOptions({
       if (options.expansions.has("TWILIGHTS FALL")) {
         return false;
       }
-      return options.expansions.has(event.expansion);
+      return canSelectEventWithoutExpansion(event, options.expansions);
     })
     .sort(([_, a], [__, b]) => {
       if (a.name > b.name) {
@@ -557,7 +577,7 @@ function Options({
       if (options.expansions.has("TWILIGHTS FALL")) {
         return false;
       }
-      return options.expansions.has(event.expansion);
+      return canSelectEventWithoutExpansion(event, options.expansions);
     })
     .sort(([_, a], [__, b]) => {
       if (a.name > b.name) {

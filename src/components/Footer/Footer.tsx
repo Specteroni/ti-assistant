@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { usePathname } from "next/navigation";
 import { CSSProperties, use, useEffect, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { FactionSummary } from "../../FactionSummary";
@@ -116,6 +117,7 @@ function getNumButtons(
 export default function Footer() {
   const dataUpdate = useDataUpdate();
   const options = useOptions();
+  const pathname = usePathname();
   const orderedFactionIds = useOrderedFactionIds("MAP");
   const factionColors = useAllFactionColors();
   const phase = usePhase();
@@ -193,7 +195,20 @@ export default function Footer() {
     options.expansions.includes("TWILIGHTS FALL") &&
     options.hide?.includes("RELICS");
 
-  const numButtons = getNumButtons(phase, strategyCards, options, !!tyrant);
+  const pathParts = pathname.split("/").filter(Boolean);
+  const gameIndex = pathParts.indexOf("game");
+  const gameView =
+    gameIndex >= 0 ? pathParts[gameIndex + 2] : undefined;
+  const currentFactionId =
+    gameView && gameView !== "main" && gameView !== "objectives"
+      ? (decodeURIComponent(gameView) as FactionId)
+      : undefined;
+  const canUseSpeakerActions =
+    !currentFactionId || currentFactionId === speaker;
+
+  const numButtons =
+    getNumButtons(phase, strategyCards, options, !!tyrant) -
+    (!shouldBlockSpeakerUpdates() && !canUseSpeakerActions ? 1 : 0);
   return (
     <>
       <button
@@ -212,7 +227,7 @@ export default function Footer() {
       <div
         className={`${styles.MobileMenu} ${showMobileMenu ? styles.shown : ""}`}
       >
-        {!shouldBlockSpeakerUpdates() ? (
+        {!shouldBlockSpeakerUpdates() && canUseSpeakerActions ? (
           <div className="flexRow">
             <Strings.Speaker />:
             <FactionSelectRadialMenu
@@ -370,7 +385,7 @@ export default function Footer() {
         }
         style={{ "--num-buttons": numButtons } as CSSProperties}
       >
-        {!shouldBlockSpeakerUpdates() ? (
+        {!shouldBlockSpeakerUpdates() && canUseSpeakerActions ? (
           <div className={styles.UpdateBoxElement} style={{ gap: 0 }}>
             <FactionSelectRadialMenu
               borderColor={factionColors[speaker]?.border}

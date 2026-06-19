@@ -1,12 +1,33 @@
 "use client";
 
-import { useIntl } from "react-intl";
+import { useMemo } from "react";
+import { createIntl, createIntlCache } from "react-intl";
 import Sidebars from "../../../../src/components/Sidebars/Sidebars";
 import { usePhase, useRound } from "../../../../src/context/stateDataHooks";
 import { phaseString } from "../../../../src/util/strings";
 
-export default function DynamicSidebars() {
-  const intl = useIntl();
+export default function DynamicSidebars({
+  locale,
+  messages,
+}: {
+  locale: string;
+  messages: Record<string, string>;
+}) {
+  const intl = useMemo(() => {
+    return createIntl(
+      {
+        locale,
+        messages,
+        onError: (err) => {
+          if (err.code === "MISSING_TRANSLATION") {
+            return;
+          }
+          console.log(err);
+        },
+      },
+      createIntlCache(),
+    );
+  }, [locale, messages]);
   const round = useRound();
   const phase = usePhase();
 

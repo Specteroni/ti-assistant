@@ -5,6 +5,7 @@ export const DEFAULT_SETTINGS: Settings = {
   "faction-planet-view": "GRID",
   "group-techs-by-faction": false,
   "planet-panel-view": "CLASSIC",
+  "player-view-faction": "NONE",
   "show-turn-timer": true,
   // Faction Summary Settings
   "fs-tech-summary-display": "NUMBER+ICON+TREE",
@@ -20,6 +21,7 @@ export interface Settings {
   "faction-planet-view": PlanetPanelView;
   "group-techs-by-faction": boolean;
   "planet-panel-view": PlanetPanelView;
+  "player-view-faction": FactionId | "NONE";
   "show-turn-timer": boolean;
   "fs-tech-summary-display": TechSummaryDisplay;
   "fs-left": SummarySection;

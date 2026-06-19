@@ -1,9 +1,50 @@
 import Cookies from "js-cookie";
 
+const RECENT_GAME_IDS_KEY = "tia-recent-game-ids";
+
 export function setGameId(gameId: string) {
   if (!Cookies.get("gameid") || Cookies.get("gameid") !== gameId) {
     Cookies.set("gameid", gameId);
   }
+  rememberRecentGameId(gameId);
+}
+
+export function getRecentGameIds() {
+  if (typeof window === "undefined") {
+    return [];
+  }
+  try {
+    const storedGameIds = window.localStorage.getItem(RECENT_GAME_IDS_KEY);
+    if (!storedGameIds) {
+      return [];
+    }
+    const parsedGameIds = JSON.parse(storedGameIds);
+    if (!Array.isArray(parsedGameIds)) {
+      return [];
+    }
+    return parsedGameIds.filter((gameId): gameId is string => {
+      return typeof gameId === "string" && gameId.length > 0;
+    });
+  } catch {
+    return [];
+  }
+}
+
+export function rememberRecentGameId(gameId: string) {
+  if (typeof window === "undefined" || !gameId) {
+    return;
+  }
+  const recentGameIds = getRecentGameIds();
+  const nextGameIds = [
+    gameId,
+    ...recentGameIds.filter((storedGameId) => storedGameId !== gameId),
+  ].slice(0, 5);
+  try {
+    window.localStorage.setItem(
+      RECENT_GAME_IDS_KEY,
+      JSON.stringify(nextGameIds),
+    );
+  } catch {}
 }
 
 export function getGameId() {

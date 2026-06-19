@@ -155,8 +155,12 @@ export function buildCompleteComponents(
 
   let components: Record<string, Component> = {};
   Object.entries(baseData.components).forEach(([componentId, component]) => {
+    const selectedEventComponent =
+      component.event && events.includes(component.event);
+
     // Filter out expansion components.
     if (
+      !selectedEventComponent &&
       component.expansion !== "BASE" &&
       !expansions.includes(component.expansion)
     ) {
@@ -346,8 +350,12 @@ export function buildCompleteObjectives(
 
   const objectives: Partial<Record<ObjectiveId, Objective>> = {};
   objectEntries(baseData.objectives).forEach(([objectiveId, objective]) => {
+    const selectedEventObjective =
+      objective.event && events.includes(objective.event);
+
     // Filter out expansion objectives.
     if (
+      !selectedEventObjective &&
       objective.expansion !== "BASE" &&
       !expansions.includes(objective.expansion)
     ) {

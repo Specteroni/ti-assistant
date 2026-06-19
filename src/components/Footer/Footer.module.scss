@@ -51,23 +51,7 @@ div.UpdateBox {
   display: none;
 }
 
-@media only screen and (max-width: 68.75rem) {
-  div.UpdateBox {
-    left: 2rem;
-    bottom: 1.5rem;
-  }
-
-  .FactionBox {
-    position: fixed;
-    display: flex;
-    z-index: 1;
-
-    right: 2rem;
-    bottom: 1.5rem;
-  }
-}
-
-@media only screen and (max-width: 44rem) {
+@media only screen and (max-width: 68.75rem), (hover: none) and (pointer: coarse) {
   div.UpdateBox {
     display: none;
   }
@@ -91,6 +75,7 @@ div.UpdateBox {
     justify-content: center;
     gap: 0.25rem;
     border-radius: 100%;
+    border: var(--border-size) solid var(--neutral-border);
 
     z-index: 2;
     -webkit-tap-highlight-color: transparent;
@@ -151,7 +136,7 @@ div.UpdateBox {
     width: 1.875rem;
     aspect-ratio: 1;
     border-radius: 100%;
-    border: none;
+    border: var(--border-size) solid var(--neutral-border);
     padding: 0.1875rem;
     -webkit-tap-highlight-color: transparent;
   }

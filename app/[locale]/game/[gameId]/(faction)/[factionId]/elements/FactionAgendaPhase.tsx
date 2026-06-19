@@ -11,6 +11,7 @@ import {
   canFactionVote,
   computeRemainingVotes,
   getTargets,
+  translateOutcome,
 } from "../../../../../../../src/components/VoteBlock/VoteBlock";
 import {
   useActionLog,
@@ -68,6 +69,7 @@ export default function FactionAgendaPhase({
   const viewOnly = useViewOnly();
   const voteRef = useRef<HTMLDivElement>(null);
   const currentAgendaLog = getCurrentAgendaLogEntries(actionLog);
+  const isSpeaker = factionId === state.speaker;
 
   function saveCastVotes(element: HTMLDivElement) {
     if (!canEditVotes) {
@@ -92,7 +94,8 @@ export default function FactionAgendaPhase({
 
   async function completeAgenda() {
     const tieBreak = getSpeakerTieBreak(currentAgendaLog);
-    const target = tieBreak ? tieBreak : selectedTargets[0];
+    const target =
+      tieBreak ?? (selectedTargets.length === 1 ? selectedTargets[0] : undefined);
     if (!target || !currentAgenda) {
       return;
     }
@@ -118,6 +121,13 @@ export default function FactionAgendaPhase({
     await dataUpdate(Events.EndTurnEvent({}));
   }
 
+  async function startVoting() {
+    if (!isSpeaker || state.votingStarted) {
+      return;
+    }
+    await dataUpdate(Events.StartVotingEvent());
+  }
+
   let currentAgenda: Optional<Agenda>;
   const activeAgenda = getActiveAgenda(currentAgendaLog);
   if (activeAgenda) {
@@ -125,6 +135,9 @@ export default function FactionAgendaPhase({
   }
 
   if (!currentAgenda) {
+    if (!isSpeaker) {
+      return null;
+    }
     const orderedAgendas = Object.values(agendas ?? {}).sort((a, b) => {
       if (a.name < b.name) {
         return -1;
@@ -244,6 +257,19 @@ export default function FactionAgendaPhase({
     return null;
   }
   const tieBreak = getSpeakerTieBreak(currentAgendaLog);
+  const resolveTarget =
+    tieBreak ?? (selectedTargets.length === 1 ? selectedTargets[0] : undefined);
+  const resolveOutcome =
+    translateOutcome(
+      resolveTarget,
+      localAgenda?.elect,
+      planets,
+      factions,
+      objectives,
+      agendas,
+      strategyCards,
+      intl,
+    ) ?? resolveTarget;
   const outcomes = new Set<OutcomeType>();
   Object.values(agendas ?? {}).forEach((agenda) => {
     if (agenda.target || agenda.elect === "???") return;
@@ -260,7 +286,6 @@ export default function FactionAgendaPhase({
   const hasVotableTarget =
     !!factionVotes?.target && factionVotes?.target !== "Abstain";
   const items = Math.min((targets ?? []).length, 12);
-  const isSpeaker = factionId === state.speaker;
   const isActiveVoter = state.votingStarted && state.activeplayer === factionId;
   const votingComplete = state.votingStarted && state.activeplayer === "None";
   const activeVoter = state.activeplayer && state.activeplayer !== "None";
@@ -284,12 +309,16 @@ export default function FactionAgendaPhase({
         <LabeledDiv label={label}>
           <AgendaRow
             agenda={currentAgenda}
-            removeAgenda={() => {
-              if (!currentAgenda) {
-                return;
-              }
-              dataUpdate(Events.HideAgendaEvent(currentAgenda.id));
-            }}
+            removeAgenda={
+              isSpeaker
+                ? () => {
+                    if (!currentAgenda) {
+                      return;
+                    }
+                    dataUpdate(Events.HideAgendaEvent(currentAgenda.id));
+                  }
+                : undefined
+            }
           />
         </LabeledDiv>
       </div>
@@ -307,8 +336,10 @@ export default function FactionAgendaPhase({
           >
             <SelectableRow
               itemId={eligibleOutcomes}
-              removeItem={() =>
-                dataUpdate(Events.SelectEligibleOutcomesEvent("None"))
+              removeItem={
+                isSpeaker
+                  ? () => dataUpdate(Events.SelectEligibleOutcomesEvent("None"))
+                  : undefined
               }
               viewOnly={viewOnly}
             >
@@ -317,7 +348,7 @@ export default function FactionAgendaPhase({
               </div>
             </SelectableRow>
           </LabeledDiv>
-        ) : (
+        ) : isSpeaker ? (
           <LabeledDiv
             label={
               <FormattedMessage
@@ -363,7 +394,25 @@ export default function FactionAgendaPhase({
               </div>
             </ClientOnlyHoverMenu>
           </LabeledDiv>
-        )
+        ) : null
+      ) : null}
+      {isSpeaker && !state.votingStarted ? (
+        <div
+          className="flexRow"
+          style={{ justifyContent: "center", width: "100%" }}
+        >
+          <button
+            style={{ width: "fit-content" }}
+            onClick={startVoting}
+            disabled={viewOnly}
+          >
+            <FormattedMessage
+              id="gQ0twG"
+              description="Text on a button that will start the voting part of Agenda Phase."
+              defaultMessage="Start Voting"
+            />
+          </button>
+        </div>
       ) : null}
       <div
         className="flexColumn"
@@ -665,8 +714,10 @@ export default function FactionAgendaPhase({
             >
               <SelectableRow
                 itemId={tieBreak}
-                removeItem={() =>
-                  dataUpdate(Events.SpeakerTieBreakEvent("None"))
+                removeItem={
+                  isSpeaker
+                    ? () => dataUpdate(Events.SpeakerTieBreakEvent("None"))
+                    : undefined
                 }
                 viewOnly={viewOnly}
               >
@@ -675,14 +726,29 @@ export default function FactionAgendaPhase({
             </LabeledDiv>
           )
         ) : null}
-        {isSpeaker && votingComplete && (selectedTargets.length === 1 || tieBreak) ? (
+        {isSpeaker && votingComplete ? (
           <div
             className="flexRow"
             style={{ width: "100%", justifyContent: "center" }}
           >
-            <button onClick={completeAgenda} disabled={viewOnly}>
-              Resolve with target:{" "}
-              {selectedTargets.length === 1 ? selectedTargets[0] : tieBreak}
+            <button
+              onClick={completeAgenda}
+              disabled={viewOnly || !resolveTarget}
+            >
+              {resolveTarget ? (
+                <FormattedMessage
+                  id="GR4fXA"
+                  defaultMessage="Resolve with Outcome: {outcome}"
+                  description="Text on a button that resolves the current agenda with a specific outcome."
+                  values={{ outcome: resolveOutcome }}
+                />
+              ) : (
+                <FormattedMessage
+                  id="Agenda.ResolveNeedsTieBreak"
+                  defaultMessage="Choose Tie-Break to Resolve"
+                  description="Disabled button text telling the speaker to choose a tied outcome before resolving the agenda."
+                />
+              )}
             </button>
           </div>
         ) : null}

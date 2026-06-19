@@ -17,6 +17,7 @@ import styles from "./HoverMenu.module.scss";
 export function ClientOnlyHoverMenu({
   label,
   style,
+  labelStyle,
   borderless,
   buttonStyle = {},
   children,
@@ -46,6 +47,7 @@ export function ClientOnlyHoverMenu({
               padding: `0.25rem 0.5rem`,
               whiteSpace: "nowrap",
               backgroundColor: "var(--background-color)",
+              ...labelStyle,
             } as CSSProperties
           }
         >
@@ -59,6 +61,7 @@ export function ClientOnlyHoverMenu({
     <HoverMenu
       label={label}
       style={style}
+      labelStyle={labelStyle}
       borderless={borderless}
       buttonStyle={buttonStyle}
       borderColor={borderColor}
@@ -75,6 +78,7 @@ interface HoverMenuProps {
   renderProps?: (closeFn: () => void) => ReactNode;
   label?: ReactNode;
   style?: CSSProperties;
+  labelStyle?: CSSProperties;
   borderless?: boolean;
   buttonStyle?: CSSProperties;
   borderColor?: string;
@@ -85,6 +89,7 @@ interface HoverMenuProps {
 export function HoverMenu({
   label,
   style,
+  labelStyle,
   borderless,
   buttonStyle = {},
   children,
@@ -245,6 +250,7 @@ export function HoverMenu({
             padding: `0.25rem 0.5rem`,
             whiteSpace: "nowrap",
             backgroundColor: "var(--background-color)",
+            ...labelStyle,
           } as CSSProperties
         }
       >
@@ -258,6 +264,7 @@ export function HoverMenu({
               {
                 "--color": borderColor,
                 padding: `0.25rem 0.5rem`,
+                ...labelStyle,
               } as CSSProperties
             }
           >
@@ -272,6 +279,7 @@ export function HoverMenu({
             className={`${styles.innerHoverLabel} ${side === "left" ? styles.left : ""} ${styles.up}`}
             style={{
               padding: `0.25rem 0.5rem`,
+              ...labelStyle,
             }}
           >
             {label}

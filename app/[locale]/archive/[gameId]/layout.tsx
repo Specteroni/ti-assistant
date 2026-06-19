@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import "server-only";
 import { getGameData, getTimers } from "../../../../server/util/fetch";
 import DataInitializer from "../../../../src/context/DataWrapper";
+import { getMessages } from "../../../../src/util/server";
 import DynamicSidebars from "../../game/[gameId]/dynamic-sidebars";
 import GameLoader from "../../game/[gameId]/game-loader";
 import SummaryColumn from "../../game/[gameId]/main/summary-column/SummaryColumn";
@@ -53,12 +54,13 @@ export default async function Layout({
   children,
   params,
 }: LayoutProps<"/[locale]/archive/[gameId]">) {
-  const { gameId } = await params;
+  const { gameId, locale } = await params;
+  const messages = await getMessages(locale);
 
   return (
     <Suspense fallback={<GameLoader />}>
       <DataInitializer archive gameId={gameId} data={fetchGameData(gameId)}>
-        <DynamicSidebars />
+        <DynamicSidebars locale={locale} messages={messages} />
         <div className={styles.Main}>
           <Phase />
           <SummaryColumn />

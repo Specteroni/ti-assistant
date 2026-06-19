@@ -100,6 +100,14 @@ export default async function Page({ params }: PageProps<"/[locale]">) {
                   description: "A button that will open the archive page.",
                 })}
               </Link>
+              <Link href={"/recent"} className="outline">
+                {intl.formatMessage({
+                  id: "Rr07qi",
+                  defaultMessage: "Recent Games",
+                  description:
+                    "A button that will open the recently played games page.",
+                })}
+              </Link>
               <Link href={"/stats"} className="outline">
                 {intl.formatMessage({
                   id: "aO0PYJ",

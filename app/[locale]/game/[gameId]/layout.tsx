@@ -8,10 +8,11 @@ import {
   TIASession,
 } from "../../../../server/util/fetch";
 import DataInitializer from "../../../../src/context/DataWrapper";
-import { getSessionIdFromCookie } from "../../../../src/util/server";
+import { getMessages, getSessionIdFromCookie } from "../../../../src/util/server";
 import { Optional } from "../../../../src/util/types/types";
 import DynamicSidebars from "./dynamic-sidebars";
 import GameLoader from "./game-loader";
+import RememberGame from "./RememberGame";
 
 async function fetchGameData(gameId: string, sessionId: Optional<string>) {
   const dataPromise = getGameData(gameId, "games");
@@ -47,14 +48,18 @@ export default async function Layout({
   children,
   params,
 }: LayoutProps<"/[locale]/game/[gameId]">) {
-  const { gameId } = await params;
+  const { gameId, locale } = await params;
 
-  const sessionId = await getSessionIdFromCookie();
+  const [messages, sessionId] = await Promise.all([
+    getMessages(locale),
+    getSessionIdFromCookie(),
+  ]);
 
   return (
     <Suspense fallback={<GameLoader />}>
       <DataInitializer gameId={gameId} data={fetchGameData(gameId, sessionId)}>
-        <DynamicSidebars />
+        <RememberGame gameId={gameId} />
+        <DynamicSidebars locale={locale} messages={messages} />
         {children}
       </DataInitializer>
     </Suspense>

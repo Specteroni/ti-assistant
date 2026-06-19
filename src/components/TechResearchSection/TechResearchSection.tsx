@@ -152,6 +152,14 @@ export default function TechResearchSection({
                     defaultMessage: "Research Tech",
                   }))
             }
+            labelStyle={
+              gain
+                ? undefined
+                : {
+                    backgroundColor: "rgba(64, 140, 255, 0.18)",
+                    boxShadow: "inset 0 0 0 1px rgba(125, 180, 255, 0.18)",
+                  }
+            }
             techs={availableTechs}
             selectTech={(tech) => {
               let additionalFactions: Optional<FactionId[]>;
