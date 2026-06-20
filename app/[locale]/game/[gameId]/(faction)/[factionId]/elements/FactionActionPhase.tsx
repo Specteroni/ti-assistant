@@ -44,6 +44,7 @@ export default function FactionActionPhase({
       case "Tyrannus":
         return (
           <>
+            <SecondaryContextBanner selectedAction={selectedAction} />
             <SecondaryCheck factionId={factionId} />
             <AdditionalActions
               factionId={factionId}
@@ -73,6 +74,19 @@ export default function FactionActionPhase({
         <NextPlayerButtons activeFactionId={factionId} />
       </div>
     </>
+  );
+}
+
+function SecondaryContextBanner({
+  selectedAction,
+}: {
+  selectedAction: Action;
+}) {
+  return (
+    <div className="flexColumn" style={secondaryContextStyle}>
+      <div style={secondaryContextEyebrowStyle}>Strategy Card Secondary</div>
+      <div style={secondaryContextTitleStyle}>{selectedAction}</div>
+    </div>
   );
 }
 
@@ -134,3 +148,26 @@ function secondaryButtonStyle(disabled = false) {
     padding: `${rem(5)} ${rem(12)}`,
   };
 }
+
+const secondaryContextStyle = {
+  alignItems: "center",
+  backgroundColor: "var(--light-bg)",
+  border: "1px solid var(--neutral-border)",
+  borderRadius: rem(6),
+  gap: rem(1),
+  marginBlockEnd: rem(4),
+  padding: `${rem(4)} ${rem(12)}`,
+  textAlign: "center" as const,
+};
+
+const secondaryContextEyebrowStyle = {
+  color: "var(--neutral-text)",
+  fontSize: rem(10),
+  textTransform: "uppercase" as const,
+};
+
+const secondaryContextTitleStyle = {
+  color: "var(--foreground-color)",
+  fontSize: rem(16),
+  lineHeight: 1,
+};
