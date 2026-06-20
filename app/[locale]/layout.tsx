@@ -13,9 +13,9 @@ const finlandica = Finlandica({
 });
 
 export const metadata: Metadata = {
-  title: "TI Assistant",
+  title: "JoboTracker",
   description:
-    "Help your Twilight Imperium 4 games run more smoothly with TI Assistant, a fully featured assistant application that can be used by any number of players on their phone and on a shared screen.",
+    "Help your Twilight Imperium 4 games run more smoothly with JoboTracker, a fully featured assistant application that can be used by any number of players on their phone and on a shared screen.",
   icons: {
     shortcut: "/images/favicon.ico",
   },

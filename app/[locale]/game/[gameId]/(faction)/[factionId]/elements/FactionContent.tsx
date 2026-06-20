@@ -15,20 +15,22 @@ import { rem } from "../../../../../../../src/util/util";
 import ObjectiveTab from "./ObjectiveTab";
 import PhaseSection from "./PhaseSection";
 import PlanetTab from "./PlanetTab";
-import TechTab from "./TechTab";
 import ChipGroup from "../../../../../../../src/components/Chip/ChipGroup";
 import UnitOverviewTab from "./UnitOverviewTab";
+import TechReferenceTab from "./TechReferenceTab";
 
 export default function FactionContent({
   factionId,
 }: {
   factionId: FactionId;
 }) {
-  const [tabShown, setTabShown] = useState<string>("planets");
   const activeFactionId = useActiveFactionId();
   const onDeckFactionId = useOnDeckFactionId();
   const { settings } = useContext(SettingsContext);
   const state = useGameState();
+  const [tabShown, setTabShown] = useState<string>(
+    state.phase === "AGENDA" ? "" : "planets",
+  );
   const showPlayerViewIndicator = settings["player-view-faction"] === factionId;
   const showVoteBanner =
     state.phase === "AGENDA" &&
@@ -46,8 +48,8 @@ export default function FactionContent({
   }
 
   useEffect(() => {
-    setTabShown("planets");
-  }, [factionId]);
+    setTabShown(state.phase === "AGENDA" ? "" : "planets");
+  }, [factionId, state.phase]);
 
   return (
     <div className="flexColumn" style={{ gap: rem(8), width: "100%" }}>
@@ -103,19 +105,6 @@ export default function FactionContent({
             >
               {/* Tabs */}
               <ChipGroup style={{ margin: "auto" }}>
-                <Conditional appSection="TECHS">
-                  <Tab
-                    selectTab={toggleTabShown}
-                    id="techs"
-                    selectedId={tabShown}
-                  >
-                    <FormattedMessage
-                      id="ys7uwX"
-                      description="Shortened version of technologies."
-                      defaultMessage="Techs"
-                    />
-                  </Tab>
-                </Conditional>
                 <Conditional appSection="PLANETS">
                   <Tab
                     selectTab={toggleTabShown}
@@ -126,6 +115,19 @@ export default function FactionContent({
                       id="1fNqTf"
                       description="Planets."
                       defaultMessage="Planets"
+                    />
+                  </Tab>
+                </Conditional>
+                <Conditional appSection="PLANETS">
+                  <Tab
+                    selectTab={toggleTabShown}
+                    id="manage-planets"
+                    selectedId={tabShown}
+                  >
+                    <FormattedMessage
+                      id="FactionDetails.ManagePlanets"
+                      description="Short label for a faction details tab for editing planet ownership and attachments."
+                      defaultMessage="Manage Planets"
                     />
                   </Tab>
                 </Conditional>
@@ -149,19 +151,50 @@ export default function FactionContent({
                     defaultMessage="Units"
                   />
                 </Tab>
+                <Conditional appSection="TECHS">
+                  <Tab
+                    selectTab={toggleTabShown}
+                    id="researched-tech"
+                    selectedId={tabShown}
+                  >
+                    <FormattedMessage
+                      id="FactionDetails.ResearchedTech"
+                      description="Short label for a faction details tab showing researched technology cards."
+                      defaultMessage="Researched Tech"
+                    />
+                  </Tab>
+                </Conditional>
+                <Conditional appSection="TECHS">
+                  <Tab
+                    selectTab={toggleTabShown}
+                    id="unresearched-tech"
+                    selectedId={tabShown}
+                  >
+                    <FormattedMessage
+                      id="FactionDetails.UnresearchedTech"
+                      description="Short label for a faction details tab showing unselected technology cards."
+                      defaultMessage="Unresearched Tech"
+                    />
+                  </Tab>
+                </Conditional>
               </ChipGroup>
-              <Conditional appSection="TECHS">
-                <TabBody id="techs" selectedId={tabShown}>
-                  <LabeledLine />
-                  <TechTab factionId={factionId} />
-                </TabBody>
-              </Conditional>
               <Conditional appSection="PLANETS">
                 <TabBody id="planets" selectedId={tabShown}>
                   <LabeledLine />
                   <PlanetTab
                     active={tabShown === "planets"}
                     factionId={factionId}
+                    mode="spend"
+                  />
+                </TabBody>
+              </Conditional>
+              <Conditional appSection="PLANETS">
+                <TabBody id="manage-planets" selectedId={tabShown}>
+                  <LabeledLine />
+                  <PlanetTab
+                    active={tabShown === "manage-planets"}
+                    factionId={factionId}
+                    mode="manage"
                   />
                 </TabBody>
               </Conditional>
@@ -176,6 +209,18 @@ export default function FactionContent({
                 <LabeledLine />
                 <UnitOverviewTab factionId={factionId} />
               </TabBody>
+              <Conditional appSection="TECHS">
+                <TabBody id="researched-tech" selectedId={tabShown}>
+                  <LabeledLine />
+                  <TechReferenceTab factionId={factionId} type="researched" />
+                </TabBody>
+              </Conditional>
+              <Conditional appSection="TECHS">
+                <TabBody id="unresearched-tech" selectedId={tabShown}>
+                  <LabeledLine />
+                  <TechReferenceTab factionId={factionId} type="unresearched" />
+                </TabBody>
+              </Conditional>
             </div>
           </div>
         </div>

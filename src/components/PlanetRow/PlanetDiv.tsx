@@ -1,14 +1,18 @@
-import { CSSProperties, KeyboardEvent, MouseEvent, use } from "react";
+import {
+  CSSProperties,
+  KeyboardEvent,
+  MouseEvent,
+  use,
+  useState,
+} from "react";
 import { ModalContext } from "../../context/contexts";
 import {
   useAttachments,
   useOptions,
   useViewOnly,
 } from "../../context/dataHooks";
-import { SymbolX } from "../../icons/svgs";
-import FlipSVG from "../../icons/ui/Flip";
-import { useDataUpdate } from "../../util/api/dataUpdate";
 import { Events } from "../../util/api/events";
+import { useDataUpdate } from "../../util/api/dataUpdate";
 import { getPlanetTypeColor } from "../../util/planets";
 import { Optional } from "../../util/types/types";
 import { getRadialPosition, rem } from "../../util/util";
@@ -31,11 +35,11 @@ interface PlanetDivProperties extends CSSProperties {
 
 function TypeOrFactionIcon({ planet }: { planet: Planet }) {
   if (planet.types.length > 0) {
-    return <PlanetIcon types={planet.types} size={18} />;
+    return <PlanetIcon types={planet.types} size={22.5} />;
   }
 
   if (planet.faction) {
-    return <FactionComponents.Icon size={18} factionId={planet.faction} />;
+    return <FactionComponents.Icon size={22.5} factionId={planet.faction} />;
   }
 
   return null;
@@ -43,10 +47,16 @@ function TypeOrFactionIcon({ planet }: { planet: Planet }) {
 
 export default function PlanetDiv({
   canToggleState = true,
+  managementControls = false,
   planet,
+  removeMode,
+  removePlanet,
 }: {
   canToggleState?: boolean;
+  managementControls?: boolean;
   planet: Planet;
+  removeMode?: boolean;
+  removePlanet?: (planetId: PlanetId) => void;
 }) {
   const viewOnly = useViewOnly();
   const planetExhaustion = usePlanetExhaustion(planet);
@@ -113,7 +123,9 @@ export default function PlanetDiv({
       <div
         className={`${styles.PlanetDiv} ${
           canToggleExhaustion ? styles.ExhaustablePlanet : ""
-        } ${planetExhaustion.exhausted ? styles.ExhaustedPlanet : ""}`}
+        } ${
+          planetExhaustion.exhausted ? styles.ExhaustedPlanet : ""
+        }`}
         onClick={togglePlanetExhaustion}
         onKeyDown={handleKeyDown}
         role={canToggleExhaustion ? "button" : undefined}
@@ -169,8 +181,8 @@ export default function PlanetDiv({
           <div
             style={{
               position: "absolute",
-              width: rem(16),
-              height: rem(16),
+              width: rem(20),
+              height: rem(20),
               left: rem(10),
               top: rem(35),
               zIndex: 1,
@@ -187,7 +199,7 @@ export default function PlanetDiv({
             /* numOptions= */ 12,
             offset,
             /* circleSize= */ 66,
-            /* size= */ 16,
+            /* size= */ 20,
           );
           if (attribute === leftAttribute || attribute === "all-types") {
             indexStart++;
@@ -198,8 +210,8 @@ export default function PlanetDiv({
               key={index}
               style={{
                 position: "absolute",
-                width: rem(16),
-                height: rem(16),
+                width: rem(20),
+                height: rem(20),
                 zIndex: 3,
                 ...position,
               }}
@@ -208,9 +220,10 @@ export default function PlanetDiv({
             </div>
           );
         })}
-        <ExhaustButton canToggleState={canToggleState} planet={planet} />
-        <ChangeOwnerButton planet={planet} />
-        <AttachButton planet={planet} />
+        {managementControls && removeMode ? (
+          <RemovePlanetButton planet={planet} removePlanet={removePlanet} />
+        ) : null}
+        {managementControls ? <AttachButton planet={planet} /> : null}
       </div>
       <div
         className={`${styles.BottomSection} ${
@@ -220,7 +233,7 @@ export default function PlanetDiv({
       >
         {planet.name}
       </div>
-      <StructureSection planet={planet} />
+      {managementControls ? <StructureSection planet={planet} /> : null}
     </div>
   );
 }
@@ -297,56 +310,6 @@ function StructureSection({ planet }: { planet: Planet }) {
   );
 }
 
-function ExhaustButton({
-  canToggleState,
-  planet,
-}: {
-  canToggleState: boolean;
-  planet: Planet;
-}) {
-  const viewOnly = useViewOnly();
-  const { canToggle, exhausted, toggle } = usePlanetExhaustion(planet);
-
-  if (!planet.owner || planet.state === "PURGED") {
-    return null;
-  }
-  if (
-    planet.attributes.includes("ocean") ||
-    planet.attributes.includes("space-station") ||
-    planet.attributes.includes("synthetic")
-  ) {
-    return null;
-  }
-
-  const position = getRadialPosition(
-    0,
-    /* numOptions= */ 8,
-    /* offset= */ 0,
-    /* circleSize= */ 64,
-    /* size= */ 20,
-  );
-
-  return (
-    <button
-      className={`${styles.FloatingButton} ${exhausted ? "" : "hiddenButton"}`}
-      style={{
-        ...position,
-        backgroundColor: exhausted
-          ? "var(--selected-bg)"
-          : "var(--interactive-bg)",
-      }}
-      onClick={(event: MouseEvent<HTMLButtonElement>) => {
-        event.stopPropagation();
-        toggle();
-      }}
-      disabled={viewOnly || !canToggleState || !canToggle}
-      title={exhausted ? "Ready planet" : "Exhaust planet"}
-    >
-      <FlipSVG />
-    </button>
-  );
-}
-
 function AttachButton({ planet }: { planet: Planet }) {
   const attachments = useAttachments();
   const { openModal } = use(ModalContext);
@@ -355,7 +318,7 @@ function AttachButton({ planet }: { planet: Planet }) {
     /* numOptions= */ 8,
     /* offset= */ 0,
     /* circleSize= */ 64,
-    /* size= */ 20,
+    /* size= */ 32,
   );
 
   function availableAttachments() {
@@ -435,11 +398,17 @@ function AttachButton({ planet }: { planet: Planet }) {
   );
 }
 
-function ChangeOwnerButton({ planet }: { planet: Planet }) {
-  const dataUpdate = useDataUpdate();
+function RemovePlanetButton({
+  planet,
+  removePlanet,
+}: {
+  planet: Planet;
+  removePlanet?: (planetId: PlanetId) => void;
+}) {
+  const viewOnly = useViewOnly();
+  const [confirming, setConfirming] = useState(false);
 
-  // TODO: Use this for unclaimed planets.
-  if (!planet.owner) {
+  if (!planet.owner || planet.locked) {
     return null;
   }
 
@@ -448,21 +417,41 @@ function ChangeOwnerButton({ planet }: { planet: Planet }) {
     /* numOptions= */ 8,
     /* offset= */ 0,
     /* circleSize= */ 64,
-    /* size= */ 20,
+    /* size= */ 32,
   );
 
   return (
     <button
-      className={`${styles.FloatingButton} hiddenButton`}
-      style={position}
+      className={styles.FloatingButton}
+      style={{
+        ...position,
+        backgroundColor: "var(--background-color)",
+        border: "2px solid var(--red-tech-color)",
+        borderRadius: rem(4),
+        boxShadow: confirming
+          ? `0 0 ${rem(8)} var(--red-tech-color)`
+          : `0 0 ${rem(4)} var(--red-tech-color)`,
+        color: "var(--foreground-color)",
+        fontFamily: "var(--main-font)",
+        fontSize: rem(17),
+        fontWeight: 900,
+        padding: 0,
+        width: rem(32),
+      }}
       onClick={(event: MouseEvent<HTMLButtonElement>) => {
         event.stopPropagation();
-        dataUpdate(
-          Events.ClaimPlanetEvent(planet.owner as FactionId, planet.id),
-        );
+        if (!confirming) {
+          setConfirming(true);
+          return;
+        }
+        removePlanet?.(planet.id);
+        setConfirming(false);
       }}
+      onBlur={() => setConfirming(false)}
+      disabled={viewOnly || !removePlanet}
+      title={confirming ? "Tap again to make unowned" : "Make planet unowned"}
     >
-      <SymbolX color="firebrick" />
+      X
     </button>
   );
 }

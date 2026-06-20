@@ -124,7 +124,7 @@
     "defaultMessage": "Дополнения:"
   },
   "355TBA": {
-    "description": "Label for section listing out people that worked on TI Assistant.",
+    "description": "Label for section listing out people that worked on JoboTracker.",
     "defaultMessage": "Контрибьюторы"
   },
   "3Taw9H": {
@@ -456,7 +456,7 @@
     "defaultMessage": "Порядок по Председателю"
   },
   "LCVmZp": {
-    "description": "Credit for the french translation of TI Assistant.",
+    "description": "Credit for the french translation of JoboTracker.",
     "defaultMessage": "Французский перевод: {name}"
   },
   "LD7frS": {
@@ -636,7 +636,7 @@
     "defaultMessage": "Голоса"
   },
   "VZ+RJH": {
-    "description": "Credit for helping to program TI Assistant.",
+    "description": "Credit for helping to program JoboTracker.",
     "defaultMessage": "Разработка: {name}"
   },
   "VjlCY0": {
@@ -664,7 +664,7 @@
     "defaultMessage": "Сгруппировать по"
   },
   "X3Nzbr": {
-    "description": "Label for section listing out people that regularly donate to TI Assistant.",
+    "description": "Label for section listing out people that regularly donate to JoboTracker.",
     "defaultMessage": "Патроны"
   },
   "X3VPhD": {
@@ -672,8 +672,8 @@
     "defaultMessage": "Экстра"
   },
   "X7zR7a": {
-    "description": "Label for a section about helping TI Assistant",
-    "defaultMessage": "Поддержите TI Assistant"
+    "description": "Label for a section about helping JoboTracker",
+    "defaultMessage": "Поддержите JoboTracker"
   },
   "XG4lKH": {
     "description": "Label on a hover menu used to return a tech.",
@@ -764,7 +764,7 @@
     "defaultMessage": "Опции"
   },
   "dENKlQ": {
-    "description": "Label for section listing out everyone that has donated to TI Assistant.",
+    "description": "Label for section listing out everyone that has donated to JoboTracker.",
     "defaultMessage": "Поддержали"
   },
   "dNmJ1r": {
@@ -908,7 +908,7 @@
     "defaultMessage": "Председатель"
   },
   "kq4/fY": {
-    "description": "Credit for the german translation of TI Assistant.",
+    "description": "Credit for the german translation of JoboTracker.",
     "defaultMessage": "Немецкий Перевод: {name}"
   },
   "l6pQCt": {

@@ -56,6 +56,7 @@ import WhenAnAgendaIsRevealed from "./components/WhenAnAgendaIsRevealed";
 
 function AgendaSteps() {
   const actionLog = useActionLog();
+  const agendas = useAgendas();
   const dataUpdate = useDataUpdate();
   const factions = useFactions();
   const state = useGameState();
@@ -66,7 +67,6 @@ function AgendaSteps() {
   const agendaNum = state.agendaNum ?? 1;
   const currentAgendaLog = getCurrentAgendaLogEntries(actionLog);
   const currentAgenda = getActiveAgenda(currentAgendaLog);
-
   if (agendaNum > 2) {
     return null;
   }
@@ -192,17 +192,109 @@ function AgendaSteps() {
                 factions[state.speaker]?.color,
               )}
             >
-              <AgendaSelect />
+              <AgendaSelect activeAgenda={currentAgenda} />
               <CovertLegislation.RevealOutcomes />
             </LabeledDiv>
           </div>
           <WhenAnAgendaIsRevealed speaker={state.speaker} />
           <AfterAnAgendaIsRevealed />
           <StartVoting />
+          <AgendaVotingStatus
+            hasAgenda={!!currentAgenda}
+            activePlayer={state.activeplayer}
+            votingStarted={!!state.votingStarted}
+          />
           <CastVotesSection showRemainingVotes />
         </div>
       )}
     </React.Fragment>
+  );
+}
+
+function AgendaVotingStatus({
+  activePlayer,
+  hasAgenda,
+  votingStarted,
+}: {
+  activePlayer?: Optional<FactionId | "None">;
+  hasAgenda: boolean;
+  votingStarted: boolean;
+}) {
+  if (!hasAgenda) {
+    return (
+      <AgendaStatusMessage>
+        <FormattedMessage
+          id="AgendaPhase.Status.SelectAgenda"
+          defaultMessage="Select an agenda before starting the vote."
+          description="Agenda voting status shown before an agenda has been selected."
+        />
+      </AgendaStatusMessage>
+    );
+  }
+
+  if (!votingStarted) {
+    return (
+      <AgendaStatusMessage>
+        <FormattedMessage
+          id="AgendaPhase.Status.ReadyToStart"
+          defaultMessage="Voting has not started yet."
+          description="Agenda voting status shown before the speaker starts voting."
+        />
+      </AgendaStatusMessage>
+    );
+  }
+
+  if (activePlayer && activePlayer !== "None") {
+    return (
+      <AgendaStatusMessage prominent>
+        <FormattedMessage
+          id="AgendaPhase.Status.CurrentVoter"
+          defaultMessage="{faction} is voting."
+          description="Agenda voting status naming the current voter."
+          values={{ faction: <FactionComponents.Name factionId={activePlayer} /> }}
+        />
+      </AgendaStatusMessage>
+    );
+  }
+
+  return (
+    <AgendaStatusMessage prominent>
+      <FormattedMessage
+        id="AgendaPhase.Status.ReadyToResolve"
+        defaultMessage="All votes are in. Resolve the agenda."
+        description="Agenda voting status shown after all voters have committed."
+      />
+    </AgendaStatusMessage>
+  );
+}
+
+function AgendaStatusMessage({
+  children,
+  prominent,
+}: React.PropsWithChildren<{ prominent?: boolean }>) {
+  return (
+    <div
+      className="flexRow"
+      style={{
+        alignSelf: "center",
+        backgroundColor: prominent
+          ? "rgba(64, 140, 255, 0.18)"
+          : "var(--background-color)",
+        border: `1px solid ${
+          prominent ? "var(--blue-bg)" : "var(--neutral-border)"
+        }`,
+        borderRadius: rem(6),
+        color: "var(--foreground-color)",
+        fontFamily: "var(--main-font)",
+        fontSize: rem(16),
+        padding: `${rem(5)} ${rem(10)}`,
+        textAlign: "center",
+        whiteSpace: "normal",
+        width: "fit-content",
+      }}
+    >
+      {children}
+    </div>
   );
 }
 

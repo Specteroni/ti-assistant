@@ -282,7 +282,7 @@ export default function MapBuilderPage() {
   return (
     <>
       <NonGameHeader
-        leftSidebar="TI ASSISTANT"
+        leftSidebar="JOBOTRACKER"
         rightSidebar={intl
           .formatMessage({
             id: "OAXWRP",

@@ -44,7 +44,7 @@ export default function InfluenceSVG({
         <path
           transform="matrix(.2736 0 0 .2736 136.4 163.4)"
           d="m42.01 38.36-26.55 15.33-26.55-15.33v-30.65l26.55-15.33 26.55 15.33z"
-          fill="none"
+          fill="var(--background-color)"
           filter={`url(#${filterId})`}
           stroke={color}
           strokeWidth="4"

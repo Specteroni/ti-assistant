@@ -260,35 +260,6 @@ function SettingsModalContent() {
                 </ChipGroup>
               </LabeledDiv>
             </div>
-            <div style={{ width: "fit-content" }}>
-              <LabeledDiv
-                label="Faction Planet View"
-                innerStyle={{
-                  flexDirection: "row",
-                  flexWrap: "wrap",
-                  gap: rem(4),
-                }}
-              >
-                <ChipGroup>
-                  <Chip
-                    selected={localSettings["faction-planet-view"] === "CLASSIC"}
-                    toggleFn={() =>
-                      updateLocalSetting("faction-planet-view", "CLASSIC")
-                    }
-                  >
-                    Rows
-                  </Chip>
-                  <Chip
-                    selected={localSettings["faction-planet-view"] === "GRID"}
-                    toggleFn={() =>
-                      updateLocalSetting("faction-planet-view", "GRID")
-                    }
-                  >
-                    Grid
-                  </Chip>
-                </ChipGroup>
-              </LabeledDiv>
-            </div>
             <div className="flexRow">
               <div>
                 Left:
@@ -518,21 +489,41 @@ function GameSettings({ gameId }: { gameId: string }) {
   const selectedColors = Object.values(factions).map(
     (faction) => faction.color,
   );
+  const victoryPointOptions = [10, 12, 14];
 
   return (
     <>
-      <div className="flexRow">
-        <FormattedMessage
-          id="R06tnh"
-          description="A label for a selector specifying the number of victory points required."
-          defaultMessage="Victory Points"
-        />
-        :
-        <NumberInput
-          value={options["victory-points"]}
-          onChange={(newVal) => changeOption(gameId, "victory-points", newVal)}
-          minValue={0}
-        />
+      <div
+        className="flexRow"
+        style={{ flexWrap: "wrap", justifyContent: "flex-start" }}
+      >
+        <div className="flexRow">
+          <FormattedMessage
+            id="R06tnh"
+            description="A label for a selector specifying the number of victory points required."
+            defaultMessage="Victory Points"
+          />
+          :
+          <NumberInput
+            value={options["victory-points"]}
+            onChange={(newVal) =>
+              changeOption(gameId, "victory-points", newVal)
+            }
+            minValue={0}
+          />
+        </div>
+        <ChipGroup>
+          {victoryPointOptions.map((points) => (
+            <Chip
+              key={points}
+              selected={options["victory-points"] === points}
+              toggleFn={() => changeOption(gameId, "victory-points", points)}
+              fontSize={14}
+            >
+              {points}
+            </Chip>
+          ))}
+        </ChipGroup>
       </div>
       <LabeledDiv
         label={

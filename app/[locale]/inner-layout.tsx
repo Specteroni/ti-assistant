@@ -35,9 +35,9 @@ export async function InnerLayout({
                       <SiteLogo />
                     </div>
                     <span className={styles.FullName}>
-                      Twilight Imperium Assistant
+                      JoboTracker
                     </span>
-                    <span className={styles.ShortName}>TI Assistant</span>
+                    <span className={styles.ShortName}>JoboTracker</span>
                   </Link>
                   <div className={styles.LangSelect}>
                     <LangSelectHoverMenu
@@ -62,12 +62,12 @@ export async function InnerLayout({
 export function LoadingLayout() {
   return (
     <>
-      <Sidebars left="TI ASSISTANT" right="TI ASSISTANT" />
+      <Sidebars left="JOBOTRACKER" right="JOBOTRACKER" />
       <div className={styles.Loader}>
         <div className={styles.LoadingLogo}>
           <SiteLogo />
         </div>
-        TI Assistant
+        JoboTracker
       </div>
     </>
   );

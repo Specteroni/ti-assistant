@@ -132,59 +132,20 @@ function ObjectiveDots({ factionId }: { factionId: FactionId }) {
     return null;
   }
 
-  const stageIs = Object.values(objectives).filter(
+  const sortedObjectives = Object.values(objectives).sort((a, b) =>
+    compareObjectiveDots(a, b, revealOrder),
+  );
+  const stageIs = sortedObjectives.filter(
     (obj) => obj.type === "STAGE ONE" && obj.selected,
   );
-  stageIs.sort((a, b) => {
-    const aRevealOrder = revealOrder[a.id];
-    const bRevealOrder = revealOrder[b.id];
-    if (!aRevealOrder && !bRevealOrder) {
-      if (a.name > b.name) {
-        return 1;
-      }
-      return -1;
-    }
-    if (!aRevealOrder) {
-      return -1;
-    }
-    if (!bRevealOrder) {
-      return 1;
-    }
-    if (aRevealOrder > bRevealOrder) {
-      return 1;
-    }
-    return -1;
-  });
-
-  const stageIIs = Object.values(objectives).filter(
+  const stageIIs = sortedObjectives.filter(
     (obj) => obj.type === "STAGE TWO" && obj.selected,
   );
-  stageIIs.sort((a, b) => {
-    const aRevealOrder = revealOrder[a.id];
-    const bRevealOrder = revealOrder[b.id];
-    if (!aRevealOrder && !bRevealOrder) {
-      if (a.name > b.name) {
-        return 1;
-      }
-      return -1;
-    }
-    if (!aRevealOrder) {
-      return -1;
-    }
-    if (!bRevealOrder) {
-      return 1;
-    }
-    if (aRevealOrder > bRevealOrder) {
-      return 1;
-    }
-    return -1;
-  });
-
-  const secrets = Object.values(objectives).filter(
+  const secrets = sortedObjectives.filter(
     (obj) => obj.type === "SECRET" && (obj.scorers ?? []).includes(factionId),
   );
 
-  const others = Object.values(objectives).filter(
+  const others = sortedObjectives.filter(
     (obj) => obj.type === "OTHER" && (obj.scorers ?? []).includes(factionId),
   );
 
@@ -408,11 +369,23 @@ function FactionPlanetSummary({
   );
 }
 
+function compareObjectiveDots(
+  a: Objective,
+  b: Objective,
+  revealOrder: Partial<Record<ObjectiveId, number>>,
+) {
+  const aRevealOrder = revealOrder[a.id] ?? Number.MAX_SAFE_INTEGER;
+  const bRevealOrder = revealOrder[b.id] ?? Number.MAX_SAFE_INTEGER;
+  if (aRevealOrder !== bRevealOrder) {
+    return aRevealOrder - bRevealOrder;
+  }
+  return `${a.name}:${a.id}`.localeCompare(`${b.name}:${b.id}`);
+}
+
 function FactionObjectiveSummary({ factionId }: { factionId: FactionId }) {
   const manualVPs = useManualFactionVPs(factionId);
   const scoredVPs = useScoredFactionVPs(factionId);
   const dataUpdate = useDataUpdate();
-  const phase = usePhase();
   const viewOnly = useViewOnly();
 
   const VPs = manualVPs + scoredVPs;
@@ -422,7 +395,7 @@ function FactionObjectiveSummary({ factionId }: { factionId: FactionId }) {
     dataUpdate(Events.ManualVPUpdateEvent(factionId, value));
   }
 
-  const editable = phase !== "END" && !viewOnly;
+  const editable = !viewOnly;
 
   return (
     <div className={styles.VPGrid}>

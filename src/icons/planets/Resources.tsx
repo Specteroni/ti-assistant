@@ -43,7 +43,7 @@ export default function ResourcesSVG({
         <path
           transform="scale(.2646)"
           d="m531.2 607.8a33.03 33.03 0 0 0-25.49 15.25l3.439 5.562a27.4 27.4 0 0 0-2.961 12.36 27.4 27.4 0 0 0 2.717 11.89l-3.479 5.104a33.03 33.03 0 0 0 26.41 15.73l3.996-5.432a27.4 27.4 0 0 0 21.17-13.12h6.285a33.03 33.03 0 0 0 3.314-14.42 33.03 33.03 0 0 0-3.531-14.86h-6.629a27.4 27.4 0 0 0-20.68-12.21z"
-          fill="none"
+          fill="var(--background-color)"
           filter={`url(#${filterId})`}
           stroke={color}
           strokeWidth="4"

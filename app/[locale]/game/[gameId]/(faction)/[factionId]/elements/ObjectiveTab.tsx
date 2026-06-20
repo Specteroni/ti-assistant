@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { ReactNode, useState } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import LabeledLine from "../../../../../../../src/components/LabeledLine/LabeledLine";
 import ObjectiveRow from "../../../../../../../src/components/ObjectiveRow/ObjectiveRow";
+import { useViewOnly } from "../../../../../../../src/context/dataHooks";
 import { useObjectives } from "../../../../../../../src/context/objectiveDataHooks";
 import { Tab, TabBody } from "../../../../../../../src/Tab";
 import { useDataUpdate } from "../../../../../../../src/util/api/dataUpdate";
@@ -72,13 +73,13 @@ function SecretTab({ factionId }: { factionId: FactionId }) {
     if (objs.size <= 4) {
       return (
         <div className="flexColumn" style={{ gap: rem(4) }}>
-          <button onClick={toggleEditMode}>
+          <RevealObjectiveButton onClick={toggleEditMode}>
             <FormattedMessage
               id="zlpl9F"
               description="Message telling a player to score a secret objective."
               defaultMessage="Score Secret Objective"
             />
-          </button>
+          </RevealObjectiveButton>
         </div>
       );
     }
@@ -121,15 +122,44 @@ function SecretTab({ factionId }: { factionId: FactionId }) {
   );
 }
 
+function RevealObjectiveButton({
+  children,
+  onClick,
+}: {
+  children: ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        backgroundColor: "var(--interactive-bg)",
+        border: "2px solid var(--neutral-border)",
+        borderRadius: rem(6),
+        boxShadow: "0 0 0 1px var(--background-color)",
+        color: "var(--foreground-color)",
+        fontFamily: "var(--main-font)",
+        fontSize: rem(14),
+        padding: `${rem(5)} ${rem(12)}`,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
 // TODO: Rename to Objective Tab
 export default function ObjectiveTab({ factionId }: { factionId: FactionId }) {
   const dataUpdate = useDataUpdate();
   const objectives = useObjectives();
+  const viewOnly = useViewOnly();
 
   const intl = useIntl();
 
   const [tabShown, setTabShown] = useState("STAGE ONE");
   const [editMode, setEditMode] = useState(false);
+  const [removeMode, setRemoveMode] = useState(false);
 
   function addObj(objectiveId: ObjectiveId) {
     dataUpdate(Events.RevealObjectiveEvent(objectiveId));
@@ -166,6 +196,7 @@ export default function ObjectiveTab({ factionId }: { factionId: FactionId }) {
   });
 
   function toggleEditMode() {
+    setRemoveMode(false);
     setEditMode(!editMode);
   }
 
@@ -183,44 +214,44 @@ export default function ObjectiveTab({ factionId }: { factionId: FactionId }) {
         }
         if (stageOneObjectives.length < maxStageOne) {
           return (
-            <button onClick={toggleEditMode}>
+            <RevealObjectiveButton onClick={toggleEditMode}>
               <FormattedMessage
                 id="6L07nG"
                 description="Text telling the user to reveal an objective."
                 defaultMessage="Reveal Objective"
               />
-            </button>
+            </RevealObjectiveButton>
           );
         } else if (
           stageOneObjectives.length === 5 &&
           stageTwoObjectives.length !== 6
         ) {
           return (
-            <button onClick={toggleEditMode}>
+            <RevealObjectiveButton onClick={toggleEditMode}>
               Reveal Objective (Incentive Program [For])
-            </button>
+            </RevealObjectiveButton>
           );
         }
         return null;
       case "STAGE TWO":
         if (stageTwoObjectives.length < 5) {
           return (
-            <button onClick={toggleEditMode}>
+            <RevealObjectiveButton onClick={toggleEditMode}>
               <FormattedMessage
                 id="6L07nG"
                 description="Text telling the user to reveal an objective."
                 defaultMessage="Reveal Objective"
               />
-            </button>
+            </RevealObjectiveButton>
           );
         } else if (
           stageTwoObjectives.length === 5 &&
           stageOneObjectives.length !== 6
         ) {
           return (
-            <button onClick={toggleEditMode}>
+            <RevealObjectiveButton onClick={toggleEditMode}>
               Reveal Objective (Incentive Program [Against])
-            </button>
+            </RevealObjectiveButton>
           );
         }
         return null;
@@ -228,33 +259,33 @@ export default function ObjectiveTab({ factionId }: { factionId: FactionId }) {
         if (secretObjectives.length < 3) {
           return (
             <div className="flexColumn" style={{ gap: rem(4) }}>
-              <button onClick={toggleEditMode}>
+              <RevealObjectiveButton onClick={toggleEditMode}>
                 <FormattedMessage
                   id="6L07nG"
                   description="Text telling the user to reveal an objective."
                   defaultMessage="Reveal Objective"
                 />
-              </button>
+              </RevealObjectiveButton>
               <div>This will not reveal to other players</div>
             </div>
           );
         } else if (secretObjectives.length === 3) {
           return (
-            <button onClick={toggleEditMode}>
+            <RevealObjectiveButton onClick={toggleEditMode}>
               Reveal Objective (Classified Document Leaks [For])
-            </button>
+            </RevealObjectiveButton>
           );
         }
         return null;
       case "OTHER":
         return (
-          <button onClick={toggleEditMode}>
+          <RevealObjectiveButton onClick={toggleEditMode}>
             <FormattedMessage
               id="6L07nG"
               description="Text telling the user to reveal an objective."
               defaultMessage="Reveal Objective"
             />
-          </button>
+          </RevealObjectiveButton>
         );
     }
   }
@@ -262,11 +293,23 @@ export default function ObjectiveTab({ factionId }: { factionId: FactionId }) {
   function changeTab(tabName: string) {
     if (tabShown === tabName) {
       setEditMode(false);
+      setRemoveMode(false);
       setTabShown("");
     } else {
       setEditMode(false);
+      setRemoveMode(false);
       setTabShown(tabName);
     }
+  }
+
+  function canRemoveObjective(obj: Objective) {
+    if (!removeMode || editMode) {
+      return false;
+    }
+    if (obj.type === "STAGE ONE" && (obj.scorers ?? []).length > 0) {
+      return false;
+    }
+    return true;
   }
 
   const maxHeight = `calc(100dvh - ${rem(420)})`;
@@ -293,6 +336,32 @@ export default function ObjectiveTab({ factionId }: { factionId: FactionId }) {
           {objectiveTypeString("OTHER", intl)}
         </Tab>
       </ChipGroup>
+      {tabShown && tabShown !== "secret" ? (
+        <div className="flexRow" style={{ padding: `${rem(6)} 0 0` }}>
+          <RemoveModeToggle
+            active={removeMode}
+            activeLabel={
+              <FormattedMessage
+                id="ObjectiveTab.RemoveModeOn"
+                defaultMessage="Removing Objectives"
+                description="Toggle label indicating objective removal mode is active."
+              />
+            }
+            inactiveLabel={
+              <FormattedMessage
+                id="ObjectiveTab.RemoveModeOff"
+                defaultMessage="Remove Objectives"
+                description="Toggle label enabling objective removal mode."
+              />
+            }
+            setActive={(active) => {
+              setEditMode(false);
+              setRemoveMode(active);
+            }}
+            viewOnly={viewOnly}
+          />
+        </div>
+      ) : null}
       <TabBody id="STAGE ONE" selectedId={tabShown}>
         <div className="largeFont">
           <LabeledLine />
@@ -316,9 +385,9 @@ export default function ObjectiveTab({ factionId }: { factionId: FactionId }) {
                     objectiveId={obj.id}
                     scoreObjective={scoreObj}
                     removeObjective={
-                      editMode || (obj.scorers ?? []).length > 0
-                        ? undefined
-                        : () => dataUpdate(Events.HideObjectiveEvent(obj.id))
+                      canRemoveObjective(obj)
+                        ? () => dataUpdate(Events.HideObjectiveEvent(obj.id))
+                        : undefined
                     }
                     addObjective={editMode ? () => addObj(obj.id) : undefined}
                   />
@@ -356,9 +425,9 @@ export default function ObjectiveTab({ factionId }: { factionId: FactionId }) {
                     objectiveId={obj.id}
                     scoreObjective={scoreObj}
                     removeObjective={
-                      editMode
-                        ? undefined
-                        : () => dataUpdate(Events.HideObjectiveEvent(obj.id))
+                      canRemoveObjective(obj)
+                        ? () => dataUpdate(Events.HideObjectiveEvent(obj.id))
+                        : undefined
                     }
                     addObjective={editMode ? () => addObj(obj.id) : undefined}
                   />
@@ -399,9 +468,9 @@ export default function ObjectiveTab({ factionId }: { factionId: FactionId }) {
                     objectiveId={obj.id}
                     scoreObjective={scoreObj}
                     removeObjective={
-                      editMode
-                        ? undefined
-                        : () => dataUpdate(Events.HideObjectiveEvent(obj.id))
+                      canRemoveObjective(obj)
+                        ? () => dataUpdate(Events.HideObjectiveEvent(obj.id))
+                        : undefined
                     }
                     addObjective={editMode ? () => addObj(obj.id) : undefined}
                   />
@@ -417,5 +486,44 @@ export default function ObjectiveTab({ factionId }: { factionId: FactionId }) {
         </div>
       </TabBody>
     </div>
+  );
+}
+
+function RemoveModeToggle({
+  active,
+  activeLabel,
+  inactiveLabel,
+  setActive,
+  viewOnly,
+}: {
+  active: boolean;
+  activeLabel: ReactNode;
+  inactiveLabel: ReactNode;
+  setActive: (active: boolean) => void;
+  viewOnly: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={() => setActive(!active)}
+      disabled={viewOnly}
+      style={{
+        backgroundColor: active ? "var(--red-tech-color)" : "var(--interactive-bg)",
+        border: `2px solid ${
+          active ? "var(--red-tech-color)" : "var(--neutral-border)"
+        }`,
+        borderRadius: rem(6),
+        boxShadow: active
+          ? `0 0 ${rem(8)} var(--red-tech-color)`
+          : "0 0 0 1px var(--background-color)",
+        color: "var(--foreground-color)",
+        fontFamily: "var(--main-font)",
+        fontSize: rem(14),
+        padding: `${rem(3)} ${rem(10)}`,
+      }}
+    >
+      {active ? activeLabel : inactiveLabel}
+    </button>
   );
 }

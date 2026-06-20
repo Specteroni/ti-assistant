@@ -1,15 +1,17 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useContext } from "react";
 import { FormattedMessage, useIntl } from "react-intl";
 import FactionCircle from "../../../../../src/components/FactionCircle/FactionCircle";
+import { FactionPanelModal } from "../../../../../src/components/FactionPanel";
 import {
   useCurrentTurn,
-  useGameId,
   useOptions,
   useStrategyCards,
   useViewOnly,
 } from "../../../../../src/context/dataHooks";
+import { ModalContext } from "../../../../../src/context/contexts";
 import {
   useFaction,
   useFactions,
@@ -43,7 +45,6 @@ function NextPhaseButtons({ factionId }: { factionId: FactionId }) {
   const currentTurn = useCurrentTurn();
   const dataUpdate = useDataUpdate();
   const factions = useFactions();
-  const gameId = useGameId();
   const options = useOptions();
   const state = useGameState();
   const viewOnly = useViewOnly();
@@ -303,9 +304,9 @@ function LocalFactionCircle({ factionId }: { factionId: FactionId }) {
   const activeFactionId = useActiveFactionId();
 
   const faction = useFaction(factionId);
-  const gameId = useGameId();
+  const options = useOptions();
 
-  const router = useRouter();
+  const { openModal } = useContext(ModalContext);
   const phase = usePhase();
   const strategyCards = useStrategyCards();
 
@@ -325,7 +326,9 @@ function LocalFactionCircle({ factionId }: { factionId: FactionId }) {
       key={faction.id}
       borderColor={borderColor}
       factionId={faction.id}
-      onClick={() => router.push(`/game/${gameId}/${factionId}`)}
+      onClick={() =>
+        openModal(<FactionPanelModal factionId={factionId} options={options} />)
+      }
       style={{
         backgroundColor: isActive ? "#333" : undefined,
         boxShadow: isActive ? "var(--border-color) 0 0 8px 4px" : undefined,

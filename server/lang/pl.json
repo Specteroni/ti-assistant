@@ -132,7 +132,7 @@
     "defaultMessage": "Zezwól na głosowanie"
   },
   "355TBA": {
-    "description": "Label for section listing out people that worked on TI Assistant.",
+    "description": "Label for section listing out people that worked on JoboTracker.",
     "defaultMessage": "Współtwórcy"
   },
   "3Taw9H": {
@@ -457,7 +457,7 @@
   },
   "KuClgv": {
     "description": "Disclaimer about advanced tracking options.",
-    "defaultMessage": "Celem TI Assistant jest dostarczenie jak największej ilości informacji przy minimalnym wymaganym ręcznym wprowadzaniu danych.{br}Poniższe opcje wymagają znacznego ręcznego wprowadzania danych i nie są zalecane dla większości grup."
+    "defaultMessage": "Celem JoboTracker jest dostarczenie jak największej ilości informacji przy minimalnym wymaganym ręcznym wprowadzaniu danych.{br}Poniższe opcje wymagają znacznego ręcznego wprowadzania danych i nie są zalecane dla większości grup."
   },
   "KzTGw5": {
     "description": "Text on a button for replacing the current agenda.",
@@ -472,7 +472,7 @@
     "defaultMessage": "Kolejność Mówcy"
   },
   "LCVmZp": {
-    "description": "Credit for the french translation of TI Assistant.",
+    "description": "Credit for the french translation of JoboTracker.",
     "defaultMessage": "Tłumaczenie Francuskie: {name}"
   },
   "LD7frS": {
@@ -664,7 +664,7 @@
     "defaultMessage": "Głosy"
   },
   "VZ+RJH": {
-    "description": "Credit for helping to program TI Assistant.",
+    "description": "Credit for helping to program JoboTracker.",
     "defaultMessage": "Kodowanie: {name}"
   },
   "VjlCY0": {
@@ -700,7 +700,7 @@
     "defaultMessage": "Upadek Imperium"
   },
   "X3Nzbr": {
-    "description": "Label for section listing out people that regularly donate to TI Assistant.",
+    "description": "Label for section listing out people that regularly donate to JoboTracker.",
     "defaultMessage": "Patroni"
   },
   "X3VPhD": {
@@ -708,8 +708,8 @@
     "defaultMessage": "Dodatkowe"
   },
   "X7zR7a": {
-    "description": "Label for a section about helping TI Assistant",
-    "defaultMessage": "Wesprzyj TI Assistant"
+    "description": "Label for a section about helping JoboTracker",
+    "defaultMessage": "Wesprzyj JoboTracker"
   },
   "XG4lKH": {
     "description": "Label on a hover menu used to return a tech.",
@@ -804,7 +804,7 @@
     "defaultMessage": "Opcje"
   },
   "dENKlQ": {
-    "description": "Label for section listing out everyone that has donated to TI Assistant.",
+    "description": "Label for section listing out everyone that has donated to JoboTracker.",
     "defaultMessage": "Wspierający"
   },
   "dNmJ1r": {
@@ -972,7 +972,7 @@
     "defaultMessage": "Mówca"
   },
   "kq4/fY": {
-    "description": "Credit for the german translation of TI Assistant.",
+    "description": "Credit for the german translation of JoboTracker.",
     "defaultMessage": "Tłumaczenie Niemieckie: {name}"
   },
   "l6pQCt": {

@@ -52,11 +52,11 @@ function cleanLogData(data: GameUpdateData) {
   return cleanData;
 }
 
-function buildGameLog(
+export function buildGameLog(
   initialGameData: StoredGameData,
   reversedActionLog: ActionLog,
   baseData: BaseData,
-) {
+): CondensedGameData {
   const dynamicGameData = structuredClone(initialGameData);
 
   const rounds: Record<number, RoundInfo> = {};
@@ -255,9 +255,6 @@ function buildGameLog(
       };
     }
 
-    if (processedEntries.length > 0 && processedEntries.length % 25 === 0) {
-      self.postMessage({ annotatedLog: processedEntries, rounds, timerData });
-    }
   });
   const objectives = buildCompleteObjectives(baseData, dynamicGameData);
   const points: Partial<Record<FactionId, Record<ObjectiveType, number>>> = {};
@@ -286,15 +283,5 @@ function buildGameLog(
     victoryPoints: points,
   };
 
-  self.postMessage({ annotatedLog: processedEntries, rounds, timerData });
+  return { annotatedLog: processedEntries, rounds, timerData };
 }
-
-self.onmessage = (event) => {
-  buildGameLog(
-    event.data.initialGameData,
-    event.data.reversedActionLog,
-    event.data.baseData,
-  );
-};
-
-export {};

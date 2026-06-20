@@ -3,14 +3,17 @@ import { FormattedMessage, useIntl } from "react-intl";
 import { ModalContext } from "../context/contexts";
 import {
   useAbilities,
+  useAttachments,
   useGenomes,
   useLeaders,
   useParadigms,
+  usePlanets,
   useRelic,
   useTechs,
   useUpgrades,
   useViewOnly,
 } from "../context/dataHooks";
+import { useObjectives } from "../context/objectiveDataHooks";
 import { useFaction } from "../context/factionDataHooks";
 import { useOrderedFactionIds } from "../context/gameDataHooks";
 import FlipSVG from "../icons/ui/Flip";
@@ -24,6 +27,10 @@ import { leaderTypeString } from "../util/strings";
 import { getCombatValues, getTechTypeColor, sortTechs } from "../util/techs";
 import { Optional } from "../util/types/types";
 import { rem } from "../util/util";
+import {
+  applyAllPlanetAttachments,
+  filterToClaimedPlanets,
+} from "../util/planets";
 import { CollapsibleSection } from "./CollapsibleSection";
 import FactionComponents from "./FactionComponents/FactionComponents";
 import styles from "./FactionPanel.module.scss";
@@ -33,6 +40,8 @@ import RelicPlanetIcon from "./PlanetIcons/RelicPlanetIcon";
 import TechIcon from "./TechIcon/TechIcon";
 import UnitIcon from "./Units/Icons";
 import UnitStats from "./UnitStats/UnitStats";
+import ResourcesSVG from "../icons/planets/Resources";
+import InfluenceSVG from "../icons/planets/Influence";
 import AbilitySVG from "../icons/twilightsfall/ability";
 import FactionIcon from "./FactionIcon/FactionIcon";
 import UpgradeSVG from "../icons/twilightsfall/upgrade";
@@ -484,6 +493,325 @@ function UnitStatBlock({ stats, type }: { stats?: UnitStats; type: UnitType }) {
   );
 }
 
+function FactionGameDetails({ factionId }: { factionId: FactionId }) {
+  const attachments = useAttachments();
+  const faction = useFaction(factionId);
+  const objectives = useObjectives();
+  const planets = usePlanets();
+  const techs = useTechs();
+
+  if (!faction) {
+    return null;
+  }
+
+  const ownedPlanets = applyAllPlanetAttachments(
+    filterToClaimedPlanets(planets, factionId),
+    attachments,
+  ).sort((a, b) => a.name.localeCompare(b.name));
+
+  const scoredObjectives = Object.values(objectives)
+    .filter((objective) => {
+      if ((objective.scorers ?? []).includes(factionId)) {
+        return true;
+      }
+      return Object.values(objective.keyedScorers ?? {}).some((scorers) =>
+        scorers.includes(factionId),
+      );
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const researchedTechs = Object.values(techs).filter((tech) =>
+    hasTech(faction, tech),
+  );
+  sortTechs(researchedTechs);
+
+  return (
+    <CollapsibleSection
+      title={
+        <FormattedMessage
+          id="FactionPanel.GameDetails"
+          defaultMessage="Game Details"
+          description="Header for current in-game details about a faction."
+        />
+      }
+      openedByDefault
+      style={{ width: "100%" }}
+    >
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: `repeat(auto-fit, minmax(${rem(220)}, 1fr))`,
+          gap: rem(8),
+          padding: `0 ${rem(4)} ${rem(6)}`,
+          width: "100%",
+          boxSizing: "border-box",
+          alignItems: "flex-start",
+        }}
+      >
+        <DetailPanel
+          title={
+            <FormattedMessage
+              id="1fNqTf"
+              defaultMessage="Planets"
+              description="Planets."
+            />
+          }
+          empty={
+            <FormattedMessage
+              id="FactionPanel.NoPlanets"
+              defaultMessage="No planets"
+              description="Text shown when a faction controls no planets."
+            />
+          }
+          hasItems={ownedPlanets.length > 0}
+        >
+          {ownedPlanets.map((planet) => {
+            const exhausted = planet.state === "EXHAUSTED";
+            return (
+              <div
+                key={planet.id}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0, 1fr) auto auto auto",
+                  gap: rem(6),
+                  alignItems: "center",
+                  width: "100%",
+                  opacity: exhausted ? 0.58 : 1,
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "var(--main-font)",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {planet.name}
+                </span>
+                <PlanetValue>
+                  <ResourcesSVG
+                    resources={planet.resources}
+                    color={exhausted ? "var(--passed-text)" : undefined}
+                  />
+                </PlanetValue>
+                <PlanetValue>
+                  <InfluenceSVG
+                    influence={planet.influence}
+                    color={exhausted ? "var(--passed-text)" : undefined}
+                  />
+                </PlanetValue>
+                <StatePill exhausted={exhausted} />
+              </div>
+            );
+          })}
+        </DetailPanel>
+        <DetailPanel
+          title={
+            <FormattedMessage
+              id="IBolFc"
+              defaultMessage="Scored Objectives"
+              description="Objectives that a faction has scored."
+            />
+          }
+          empty={
+            <FormattedMessage
+              id="FactionPanel.NoScoredObjectives"
+              defaultMessage="No scored objectives"
+              description="Text shown when a faction has no scored objectives."
+            />
+          }
+          hasItems={scoredObjectives.length > 0}
+        >
+          {scoredObjectives.map((objective) => {
+            return (
+              <div
+                key={`${objective.id}-${objective.points}`}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "minmax(0, 1fr) auto",
+                  alignItems: "center",
+                  gap: rem(6),
+                  width: "100%",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "var(--main-font)",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {objective.name}
+                </span>
+                <span
+                  style={{
+                    color: "var(--muted-text)",
+                    fontSize: rem(11),
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {(objective.points ?? 0) > 0
+                    ? `+${objective.points}`
+                    : (objective.points ?? 0)}{" "}
+                  VP
+                </span>
+              </div>
+            );
+          })}
+        </DetailPanel>
+        <DetailPanel
+          title={
+            <FormattedMessage
+              id="fboqAw"
+              defaultMessage="Researched Tech"
+              description="Technologies that a faction has researched."
+            />
+          }
+          empty={
+            <FormattedMessage
+              id="FactionPanel.NoResearchedTech"
+              defaultMessage="No researched tech"
+              description="Text shown when a faction has no researched technology."
+            />
+          }
+          hasItems={researchedTechs.length > 0}
+        >
+          {researchedTechs.map((tech) => {
+            const exhausted = faction.techs[tech.id]?.state === "exhausted";
+            return (
+              <div
+                key={tech.id}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "auto minmax(0, 1fr) auto",
+                  alignItems: "center",
+                  gap: rem(6),
+                  width: "100%",
+                  opacity: exhausted ? 0.58 : 1,
+                }}
+              >
+                <TechIcon type={tech.type} size={16} />
+                <span
+                  style={{
+                    fontFamily: "var(--main-font)",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {tech.name}
+                </span>
+                {exhausted ? (
+                  <span
+                    style={{
+                      color: "var(--passed-text)",
+                      fontSize: rem(11),
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    Exhausted
+                  </span>
+                ) : null}
+              </div>
+            );
+          })}
+        </DetailPanel>
+      </div>
+    </CollapsibleSection>
+  );
+}
+
+function DetailPanel({
+  children,
+  empty,
+  hasItems,
+  title,
+}: PropsWithChildren<{
+  empty: ReactNode;
+  hasItems: boolean;
+  title: ReactNode;
+}>) {
+  return (
+    <div
+      className="flexColumn"
+      style={{
+        alignItems: "stretch",
+        backgroundColor: "rgba(255, 255, 255, 0.035)",
+        border: "1px solid var(--hidden-border)",
+        borderRadius: rem(6),
+        boxSizing: "border-box",
+        gap: rem(5),
+        minWidth: 0,
+        padding: rem(8),
+        width: "100%",
+      }}
+    >
+      <div
+        style={{
+          color: "var(--foreground-color)",
+          fontFamily: "var(--main-font)",
+          fontSize: rem(15),
+          textAlign: "left",
+        }}
+      >
+        {title}
+      </div>
+      {hasItems ? (
+        <div
+          className="flexColumn"
+          style={{ alignItems: "stretch", gap: rem(5) }}
+        >
+          {children}
+        </div>
+      ) : (
+        <div
+          style={{
+            color: "var(--muted-text)",
+            fontSize: rem(12),
+            textAlign: "left",
+          }}
+        >
+          {empty}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PlanetValue({ children }: PropsWithChildren) {
+  return (
+    <span
+      style={{
+        display: "block",
+        height: rem(20),
+        width: rem(20),
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function StatePill({ exhausted }: { exhausted: boolean }) {
+  return (
+    <span
+      style={{
+        border: "1px solid var(--neutral-border)",
+        borderRadius: rem(999),
+        color: exhausted ? "var(--passed-text)" : "var(--foreground-color)",
+        fontSize: rem(10),
+        lineHeight: 1,
+        padding: `${rem(3)} ${rem(6)}`,
+        whiteSpace: "nowrap",
+      }}
+    >
+      {exhausted ? "Exhausted" : "Ready"}
+    </span>
+  );
+}
+
 function FactionPanelContent({
   factionId,
   options,
@@ -553,11 +881,16 @@ function FactionPanelContent({
     .sort((a, b) => (a.name > b.name ? 1 : -1));
 
   return (
-    <div className={styles.factionInfoGrid}>
-      <div
-        className="flexColumn"
-        style={{ width: "100%", justifyContent: "flex-start" }}
-      >
+    <div
+      className="flexColumn"
+      style={{ width: "100%", alignItems: "stretch" }}
+    >
+      <FactionGameDetails factionId={factionId} />
+      <div className={styles.factionInfoGrid}>
+        <div
+          className="flexColumn"
+          style={{ width: "100%", justifyContent: "flex-start" }}
+        >
         {factionLeaders.length > 0 ? (
           <CollapsibleSection
             title={
@@ -1126,6 +1459,7 @@ function FactionPanelContent({
         ) : null}
       </div>
     </div>
+    </div>
   );
 }
 
@@ -1276,7 +1610,7 @@ export default function FactionPanel({
   );
 }
 
-function FactionPanelModal({
+export function FactionPanelModal({
   factionId,
   options,
 }: {

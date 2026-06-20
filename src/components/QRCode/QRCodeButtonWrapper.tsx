@@ -14,7 +14,7 @@ async function getCurrentGameUrl(gameId: string) {
 
 async function getQRCode(gameId: string, size: number): Promise<string> {
   const url = await getCurrentGameUrl(gameId);
-  return new Promise<string>((resolve) => {
+  return new Promise<string>((resolve, reject) => {
     QRCode.toDataURL(
       url,
       {
@@ -27,7 +27,8 @@ async function getQRCode(gameId: string, size: number): Promise<string> {
       },
       (err, url) => {
         if (err) {
-          throw err;
+          reject(err);
+          return;
         }
         resolve(url);
       },
@@ -41,13 +42,24 @@ export default function QRCodeButtonWrapper() {
   const [qrCode, setCode] = useState<string>("");
 
   useEffect(() => {
+    let cancelled = false;
     const makeQRCode = async (gameId: string) => {
-      const qrCodePromise = getQRCode(gameId, 280);
-
-      setCode(await qrCodePromise);
+      try {
+        const qrCode = await getQRCode(gameId, 280);
+        if (!cancelled) {
+          setCode(qrCode);
+        }
+      } catch {
+        if (!cancelled) {
+          setCode("");
+        }
+      }
     };
 
     makeQRCode(gameId);
+    return () => {
+      cancelled = true;
+    };
   }, [gameId, pathname]);
 
   if (!gameId || gameId === "") {

@@ -5,6 +5,7 @@ import { useFactionSecondary } from "../../../../../../../src/context/factionDat
 import { useActiveFactionId } from "../../../../../../../src/context/gameDataHooks";
 import { useDataUpdate } from "../../../../../../../src/util/api/dataUpdate";
 import { Events } from "../../../../../../../src/util/api/events";
+import { rem } from "../../../../../../../src/util/util";
 import {
   AdditionalActions,
   FactionActionButtons,
@@ -80,36 +81,56 @@ function SecondaryCheck({ factionId }: { factionId: FactionId }) {
   const secondaryState = useFactionSecondary(factionId);
   const viewOnly = useViewOnly();
   return (
-    <div className="flexRow">
+    <div className="flexRow" style={{ gap: rem(8) }}>
       {secondaryState === "PENDING" ? (
         <React.Fragment>
           <button
+            type="button"
             onClick={() => {
               dataUpdate(Events.MarkSecondaryEvent(factionId, "DONE"));
             }}
             disabled={viewOnly}
+            style={secondaryButtonStyle(viewOnly)}
           >
             Mark Completed
           </button>
           <button
+            type="button"
             onClick={() => {
               dataUpdate(Events.MarkSecondaryEvent(factionId, "SKIPPED"));
             }}
             disabled={viewOnly}
+            style={secondaryButtonStyle(viewOnly)}
           >
             Skip
           </button>
         </React.Fragment>
       ) : (
         <button
+          type="button"
           onClick={() => {
             dataUpdate(Events.MarkSecondaryEvent(factionId, "PENDING"));
           }}
           disabled={viewOnly}
+          style={secondaryButtonStyle(viewOnly)}
         >
           Not Done Yet
         </button>
       )}
     </div>
   );
+}
+
+function secondaryButtonStyle(disabled = false) {
+  return {
+    backgroundColor: disabled ? "var(--disabled-bg)" : "var(--interactive-bg)",
+    border: "2px solid var(--neutral-border)",
+    borderRadius: rem(6),
+    boxShadow: disabled ? "none" : "0 0 0 1px var(--background-color)",
+    color: disabled ? "var(--passed-text)" : "var(--foreground-color)",
+    cursor: disabled ? "not-allowed" : "pointer",
+    fontFamily: "var(--main-font)",
+    fontSize: rem(14),
+    padding: `${rem(5)} ${rem(12)}`,
+  };
 }

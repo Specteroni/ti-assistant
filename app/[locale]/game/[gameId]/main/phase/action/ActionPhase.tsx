@@ -367,6 +367,86 @@ export function AdditionalActions({
 
   const selectedAction = getSelectedActionFromLog(currentTurn) ?? "Tactical";
 
+  if (secondaryOnly) {
+    switch (selectedAction) {
+      case "Technology":
+        return factionId !== "Nekro Virus" ? (
+          <div
+            className="flexColumn largeFont"
+            style={{ width: "100%", ...style }}
+          >
+            <StrategicActions.Technology.Secondary factionId={factionId} />
+          </div>
+        ) : null;
+      case "Diplomacy":
+        return (
+          <div
+            className="flexColumn largeFont"
+            style={{ width: "100%", ...style }}
+          >
+            <StrategicActions.Diplomacy.Secondary factionId={factionId} />
+          </div>
+        );
+      case "Noctis":
+        return (
+          <div
+            className="flexColumn largeFont"
+            style={{ width: "100%", ...style }}
+          >
+            <StrategicActions.Noctis.Secondary factionId={factionId} />
+          </div>
+        );
+      case "Magus":
+        return (
+          <div
+            className="flexColumn largeFont"
+            style={{ width: "100%", ...style }}
+          >
+            <StrategicActions.Magus.Secondary factionId={factionId} />
+          </div>
+        );
+      case "Calamitas":
+        return (
+          <div
+            className="flexColumn largeFont"
+            style={{ width: "100%", ...style }}
+          >
+            <StrategicActions.Calamitas.Secondary factionId={factionId} />
+          </div>
+        );
+      case "Leadership":
+      case "Lux":
+        return (
+          <div
+            className="flexColumn largeFont"
+            style={{ width: "100%", ...style }}
+          >
+            <StrategicActions.Leadership.Secondary factionId={factionId} />
+          </div>
+        );
+      case "Warfare":
+        return (
+          <div
+            className="flexColumn largeFont"
+            style={{ width: "100%", ...style }}
+          >
+            <StrategicActions.Warfare.Secondary factionId={factionId} />
+          </div>
+        );
+      case "Aeterna":
+        return (
+          <div
+            className="flexColumn largeFont"
+            style={{ width: "100%", ...style }}
+          >
+            <StrategicActions.Aeterna.Secondary factionId={factionId} />
+          </div>
+        );
+      default:
+        return null;
+    }
+  }
+
   switch (selectedAction) {
     case "Technology":
       const strategyCard = strategyCards.Technology;
@@ -1210,6 +1290,9 @@ export function AdditionalActions({
                 />
               </InfoRow>
             }
+          />
+          <StrategicActions.Warfare.AllSecondaries
+            activeFactionId={factionId}
           />
           <SecondaryCheck
             activeFactionId={factionId}

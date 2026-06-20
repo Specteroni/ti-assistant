@@ -2245,7 +2245,7 @@ export default function SetupPage() {
                   infoContent={
                     <FormattedMessage
                       id="KuClgv"
-                      defaultMessage="The goal of TI Assistant is to provide as much information as possible while requiring minimal manual input.{br}The following options require significant manual input and are not recommended for most groups."
+                      defaultMessage="The goal of JoboTracker is to provide as much information as possible while requiring minimal manual input.{br}The following options require significant manual input and are not recommended for most groups."
                       description="Disclaimer about advanced tracking options."
                       values={{ br: "\n\n" }}
                     />
@@ -2542,7 +2542,7 @@ export default function SetupPage() {
                   infoContent={
                     <FormattedMessage
                       id="KuClgv"
-                      defaultMessage="The goal of TI Assistant is to provide as much information as possible while requiring minimal manual input.{br}The following options require significant manual input and are not recommended for most groups."
+                      defaultMessage="The goal of JoboTracker is to provide as much information as possible while requiring minimal manual input.{br}The following options require significant manual input and are not recommended for most groups."
                       description="Disclaimer about advanced tracking options."
                       values={{ br: "\n\n" }}
                     />

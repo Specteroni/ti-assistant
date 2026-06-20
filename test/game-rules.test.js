@@ -163,6 +163,40 @@ test("unclaiming a planet restores its previous owner and state when it was capt
   assert.equal(updates["planets.Mecatol Rex.state"], "EXHAUSTED");
 });
 
+test("force unclaiming a captured planet makes it unowned instead of restoring the previous owner", () => {
+  const gameData = baseGame({
+    actionLog: [
+      {
+        timestampMillis: 10,
+        data: {
+          action: "CLAIM_PLANET",
+          event: {
+            faction: "Embers of Muaat",
+            planet: "Mecatol Rex",
+            prevOwner: "Xxcha Kingdom",
+            prevState: "EXHAUSTED",
+          },
+        },
+      },
+    ],
+    planets: {
+      "Mecatol Rex": {
+        owner: "Embers of Muaat",
+        state: "READIED",
+      },
+    },
+  });
+
+  const handler = new UnclaimPlanetHandler(
+    gameData,
+    Events.UnclaimPlanetEvent("Embers of Muaat", "Mecatol Rex", true),
+  );
+
+  const updates = handler.getUpdates();
+  assert.equal(updates["planets.Mecatol Rex.owner"], "DELETE");
+  assert.equal(updates["planets.Mecatol Rex.state"], "DELETE");
+});
+
 test("planet state updates remember previous state and cancel a readied log entry", () => {
   const gameData = baseGame({
     planets: {
@@ -772,6 +806,29 @@ test("agenda voting starts turn order on start voting and clears on resolve", ()
         techs: {},
       },
     },
+    planets: {
+      "Mecatol Rex": {
+        owner: "Embers of Muaat",
+        influence: 6,
+        resources: 1,
+        attributes: [],
+        types: [],
+      },
+      "Archon Ren": {
+        owner: "Xxcha Kingdom",
+        influence: 3,
+        resources: 2,
+        attributes: [],
+        types: [],
+      },
+      "Archon Tau": {
+        owner: "Naaz-Rokha Alliance",
+        influence: 1,
+        resources: 1,
+        attributes: [],
+        types: [],
+      },
+    },
     state: {
       activeplayer: "None",
       phase: "AGENDA",
@@ -818,6 +875,83 @@ test("agenda voting starts turn order on start voting and clears on resolve", ()
   ).getUpdates();
   assert.equal(resolveUpdates["state.votingStarted"], false);
   assert.equal(resolveUpdates["state.activeplayer"], "None");
+});
+
+test("agenda voting skips players who cannot vote", () => {
+  const gameData = baseGame({
+    factions: {
+      "Embers of Muaat": {
+        id: "Embers of Muaat",
+        color: "red",
+        order: 1,
+        mapPosition: 0,
+        techs: {},
+      },
+      "Xxcha Kingdom": {
+        id: "Xxcha Kingdom",
+        color: "green",
+        order: 2,
+        mapPosition: 1,
+        techs: {},
+      },
+      "Naaz-Rokha Alliance": {
+        id: "Naaz-Rokha Alliance",
+        color: "yellow",
+        order: 3,
+        mapPosition: 2,
+        techs: {},
+      },
+    },
+    planets: {
+      "Mecatol Rex": {
+        owner: "Embers of Muaat",
+        influence: 6,
+        resources: 1,
+        attributes: [],
+        types: [],
+      },
+      "Archon Ren": {
+        owner: "Xxcha Kingdom",
+        influence: 0,
+        resources: 2,
+        attributes: [],
+        types: [],
+      },
+      "Archon Tau": {
+        owner: "Naaz-Rokha Alliance",
+        influence: 1,
+        resources: 1,
+        attributes: [],
+        types: [],
+      },
+    },
+    state: {
+      activeplayer: "None",
+      phase: "AGENDA",
+      round: 3,
+      speaker: "Embers of Muaat",
+    },
+  });
+
+  const startUpdates = new StartVotingHandler(
+    gameData,
+    Events.StartVotingEvent(),
+  ).getUpdates();
+  assert.equal(startUpdates["state.activeplayer"], "Naaz-Rokha Alliance");
+
+  const startedGame = applyUpdates(gameData, startUpdates);
+  const firstEndUpdates = new EndTurnHandler(
+    startedGame,
+    Events.EndTurnEvent({}),
+  ).getUpdates();
+  assert.equal(firstEndUpdates["state.activeplayer"], "Embers of Muaat");
+
+  const speakerTurnGame = applyUpdates(startedGame, firstEndUpdates);
+  const speakerEndUpdates = new EndTurnHandler(
+    speakerTurnGame,
+    Events.EndTurnEvent({}),
+  ).getUpdates();
+  assert.equal(speakerEndUpdates["state.activeplayer"], "None");
 });
 
 test("undoing an agenda vote commit rewinds exhausted planets from that vote", () => {

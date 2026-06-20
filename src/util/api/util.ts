@@ -90,19 +90,32 @@ export async function poster(
 ): Promise<any> {
   data.gameTime = gameTime;
   data.timestamp = timestamp;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
-    body: JSON.stringify(data),
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(data),
+    });
+  } catch (error) {
+    throw new Error(error instanceof Error ? error.message : "Request failed");
+  }
 
-  const val = await res.json();
+  const responseText = await res.text();
+  let val: any = {};
+  if (responseText) {
+    try {
+      val = JSON.parse(responseText);
+    } catch {
+      val = { message: responseText };
+    }
+  }
 
   if (res.status !== 200) {
-    throw new Error(val.message);
+    throw new Error(val.message ?? responseText ?? "Request failed");
   }
   return val;
 }

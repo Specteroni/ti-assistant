@@ -10,7 +10,7 @@ export default async function Page({ params }: PageProps<"/[locale]/recent">) {
 
   return (
     <div className="flexColumn" style={{ gap: "1rem" }}>
-      <NonGameHeader leftSidebar="TI ASSISTANT" rightSidebar="RECENT GAMES" />
+      <NonGameHeader leftSidebar="JOBOTRACKER" rightSidebar="RECENT GAMES" />
       <div
         className="flexColumn"
         style={{

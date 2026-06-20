@@ -20,7 +20,21 @@ export default function StartVoting() {
   }
   return (
     <button
-      style={{ width: "fit-content" }}
+      style={{
+        alignSelf: "center",
+        backgroundColor: viewOnly
+          ? "var(--disabled-bg)"
+          : "var(--interactive-bg)",
+        border: "2px solid var(--neutral-border)",
+        borderRadius: "0.375rem",
+        boxShadow: viewOnly ? "none" : "0 0 0 1px var(--background-color)",
+        color: viewOnly ? "var(--passed-text)" : "var(--foreground-color)",
+        cursor: viewOnly ? "not-allowed" : "pointer",
+        fontFamily: "var(--main-font)",
+        fontSize: "1.1rem",
+        padding: "0.25rem 0.75rem",
+        width: "fit-content",
+      }}
       onClick={() => {
         dataUpdate(Events.StartVotingEvent());
       }}

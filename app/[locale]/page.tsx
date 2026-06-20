@@ -17,7 +17,7 @@ export default async function Page({ params }: PageProps<"/[locale]">) {
   return (
     <>
       <div className="flexColumn" style={{ gap: "1rem" }}>
-        <NonGameHeader leftSidebar="TI ASSISTANT" rightSidebar="TI ASSISTANT" />
+        <NonGameHeader leftSidebar="JOBOTRACKER" rightSidebar="JOBOTRACKER" />
 
         <div className={styles.CenterColumn}>
           <div
@@ -38,7 +38,7 @@ export default async function Page({ params }: PageProps<"/[locale]">) {
               {intl.formatMessage({
                 id: "m6nb4H",
                 defaultMessage: "The best way to play Twilight Imperium",
-                description: "Tag line on the home page for TI Assistant.",
+                description: "Tag line on the home page for JoboTracker.",
               })}
             </h1>
             <h2
@@ -52,8 +52,8 @@ export default async function Page({ params }: PageProps<"/[locale]">) {
               {intl.formatMessage({
                 id: "l02mfP",
                 defaultMessage:
-                  "TI Assistant keeps track of whose turn it is, how much time has elapsed, and all the other details so you can focus on playing the game.",
-                description: "More info on the home page for TI Assistant.",
+                  "JoboTracker keeps track of whose turn it is, how much time has elapsed, and all the other details so you can focus on playing the game.",
+                description: "More info on the home page for JoboTracker.",
               })}
             </h2>
           </div>
@@ -144,7 +144,7 @@ export default async function Page({ params }: PageProps<"/[locale]">) {
           }}
         >
           <div>
-            Twilight Imperium Assistant is not affiliated with{" "}
+            JoboTracker is not affiliated with{" "}
             <a
               target="_blank"
               rel="noreferrer"

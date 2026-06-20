@@ -340,6 +340,7 @@ interface ChooseSubFactionData {
 interface ClaimPlanetEvent {
   faction: FactionId;
   planet: PlanetId;
+  forceUnclaim?: boolean;
   // Set by server
   prevOwner?: FactionId;
   prevState?: PlanetState;

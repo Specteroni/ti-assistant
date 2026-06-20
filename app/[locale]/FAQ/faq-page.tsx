@@ -6,7 +6,7 @@ import NonGameHeader from "../../../src/components/NonGameHeader/NonGameHeader";
 export default function FAQPage({ intl }: { intl: IntlShape }) {
   return (
     <div className="flexColumn" style={{ gap: "16px" }}>
-      <NonGameHeader leftSidebar="TI ASSISTANT" rightSidebar="FAQ" />
+      <NonGameHeader leftSidebar="JOBOTRACKER" rightSidebar="FAQ" />
       <div
         className="flexColumn"
         style={{

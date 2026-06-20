@@ -1,6 +1,10 @@
 import { getFirestore } from "firebase-admin/firestore";
 import { NextResponse } from "next/server";
 import { canEditGame } from "../../../../server/util/fetch";
+import {
+  updateLocalGame,
+  useLocalFileDb,
+} from "../../../../server/util/localStore";
 import { getFirestoreAdmin } from "../../../../src/util/server";
 
 interface ChangeOptionData {
@@ -20,6 +24,20 @@ export async function POST(
     });
   }
 
+  const data = (await req.json()) as ChangeOptionData;
+
+  if (useLocalFileDb()) {
+    return updateLocalGame(gameId, "games", "timers", (gameData) => {
+      gameData.options[data.option] = data.value;
+      gameData.sequenceNum = (gameData.sequenceNum ?? 0) + 1;
+      if (gameData.timers) {
+        gameData.timers.paused = false;
+      }
+
+      return NextResponse.json({ success: true });
+    });
+  }
+
   const db = await getFirestoreAdmin();
 
   const game = await db.collection("games").doc(gameId).get();
@@ -29,8 +47,6 @@ export async function POST(
       status: 404,
     });
   }
-
-  const data = (await req.json()) as ChangeOptionData;
 
   await db
     .collection("games")

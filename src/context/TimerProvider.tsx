@@ -12,7 +12,7 @@ import { DatabaseFnsContext, TimerContext } from "./contexts";
 import { useViewOnly } from "./dataHooks";
 
 const TIMER_SAVE_INTERVAL_MS =
-  process.env.NEXT_PUBLIC_TI_LOCAL_FILE_DB === "1" ? 1000 : 15000;
+  process.env.NEXT_PUBLIC_TI_LOCAL_FILE_DB === "1" ? 5000 : 15000;
 
 export default function TimerProvider({ children }: PropsWithChildren) {
   const databaseFns = use(DatabaseFnsContext);

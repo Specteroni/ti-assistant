@@ -38,6 +38,7 @@ import GameMap from "./Map/GameMap";
 import ObjectiveCard from "./ObjectiveRow/ObjectiveCard";
 import ScoreObjectiveRow from "./ObjectiveRow/ScoreObjectiveRow";
 import ObjectiveSelectHoverMenu from "./ObjectiveSelectHoverMenu/ObjectiveSelectHoverMenu";
+import ProduceUnitsSection from "./ProduceUnitsSection/ProduceUnitsSection";
 import styles from "./TacticalAction.module.scss";
 import TechResearchSection from "./TechResearchSection/TechResearchSection";
 
@@ -115,6 +116,7 @@ export function TacticalAction({
         availablePlanets={claimablePlanets}
         factionId={activeFactionId}
       />
+      <ProduceUnitsSection factionId={activeFactionId} />
       {hasCustodiansPoint ? (
         <FormattedMessage
           id="64NLXu"

@@ -1,8 +1,6 @@
 import { FormattedMessage, useIntl } from "react-intl";
 import LabeledDiv from "../../../../../../../../src/components/LabeledDiv/LabeledDiv";
 import {
-  canFactionVote,
-  computeRemainingVotes,
   translateOutcome,
 } from "../../../../../../../../src/components/VoteBlock/VoteBlock";
 import {
@@ -32,6 +30,10 @@ import {
 } from "../../../../../../../../src/util/api/actionLog";
 import { useDataUpdate } from "../../../../../../../../src/util/api/dataUpdate";
 import { Events } from "../../../../../../../../src/util/api/events";
+import {
+  canFactionVote,
+  computeRemainingAgendaVotes,
+} from "../../../../../../../../src/util/agendaVoting";
 import { computeVotes } from "../../../../../../../../src/util/agendaVotes";
 import { getUncommittedAgendaFactions } from "../../../../../../../../src/util/helpers";
 import { ActionLog } from "../../../../../../../../src/util/types/types";
@@ -101,7 +103,7 @@ export function CastVotesSection({
     ) {
       continue;
     }
-    const factionVotes = computeRemainingVotes(
+    const factionVotes = computeRemainingAgendaVotes(
       faction.id,
       factions,
       planets,

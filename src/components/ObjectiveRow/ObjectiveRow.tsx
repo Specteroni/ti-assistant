@@ -75,6 +75,7 @@ export default function ObjectiveRow({
       itemId={objective.id}
       selectItem={addObjective}
       removeItem={removeObjective}
+      removeLabel="X"
       viewOnly={viewOnly}
     >
       <div className="flexColumn" style={{ width: "100%", gap: 0 }}>
@@ -113,7 +114,7 @@ export default function ObjectiveRow({
           </div>
           {canScore(objective) && scoreObjective ? (
             <button
-              style={{ fontSize: em(12) }}
+              style={scoreButtonStyle()}
               onClick={() => scoreObjective(objective.id, true)}
               disabled={viewOnly}
             >
@@ -193,4 +194,17 @@ export default function ObjectiveRow({
       </div>
     </SelectableRow>
   );
+}
+
+function scoreButtonStyle() {
+  return {
+    backgroundColor: "var(--interactive-bg)",
+    border: "2px solid var(--neutral-border)",
+    borderRadius: rem(6),
+    boxShadow: "0 0 0 1px var(--background-color)",
+    color: "var(--foreground-color)",
+    fontFamily: "var(--main-font)",
+    fontSize: em(12),
+    padding: `${em(2)} ${em(8)}`,
+  };
 }

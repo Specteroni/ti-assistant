@@ -1,6 +1,15 @@
 import { createIntl, createIntlCache } from "react-intl";
-import { buildFactions, buildStrategyCards } from "../../data/GameData";
+import {
+  buildAgendas,
+  buildAttachments,
+  buildFactions,
+  buildLeaders,
+  buildPlanets,
+  buildStrategyCards,
+  buildTechs,
+} from "../../data/GameData";
 import { getSelectedAction } from "../api/data";
+import { getNextEligibleAgendaVoter } from "../agendaVoting";
 import { getOnDeckFaction } from "../helpers";
 
 export class EndTurnHandler implements Handler {
@@ -32,11 +41,25 @@ export class EndTurnHandler implements Handler {
   getUpdates(): Record<string, any> {
     const cache = createIntlCache();
     const intl = createIntl({ locale: "en" }, cache);
-    const onDeckFaction = getOnDeckFaction(
-      this.gameData.state,
-      buildFactions(this.gameData, intl),
-      buildStrategyCards(this.gameData, intl),
-    );
+    const factions = buildFactions(this.gameData, intl);
+    const onDeckFaction =
+      this.gameData.state.phase === "AGENDA"
+        ? getNextEligibleAgendaVoter(
+            this.gameData.state,
+            factions,
+            buildPlanets(this.gameData, intl),
+            buildAttachments(this.gameData, intl),
+            buildAgendas(this.gameData, intl),
+            this.gameData.options,
+            this.gameData.actionLog ?? [],
+            buildLeaders(this.gameData, intl),
+            buildTechs(this.gameData, intl),
+          )
+        : getOnDeckFaction(
+            this.gameData.state,
+            factions,
+            buildStrategyCards(this.gameData, intl),
+          );
 
     const updates: Record<string, any> = {
       [`state.paused`]: false,

@@ -128,7 +128,7 @@
     "defaultMessage": "Permitir Votar"
   },
   "355TBA": {
-    "description": "Label for section listing out people that worked on TI Assistant.",
+    "description": "Label for section listing out people that worked on JoboTracker.",
     "defaultMessage": "Contribuidores"
   },
   "3Taw9H": {
@@ -445,7 +445,7 @@
   },
   "KuClgv": {
     "description": "Disclaimer about advanced tracking options.",
-    "defaultMessage": "O objetivo do TI Assistant é oferecer a maior quantidade de informação possível ao mesmo tempo que requer o mínimo de input manual.{br}As opções a seguir requerem uma quantidade significativa de input manual e não são recomendadas para a maioria dos grupos."
+    "defaultMessage": "O objetivo do JoboTracker é oferecer a maior quantidade de informação possível ao mesmo tempo que requer o mínimo de input manual.{br}As opções a seguir requerem uma quantidade significativa de input manual e não são recomendadas para a maioria dos grupos."
   },
   "KzTGw5": {
     "description": "Text on a button for replacing the current agenda.",
@@ -460,7 +460,7 @@
     "defaultMessage": "Ordem de Porta-Voz"
   },
   "LCVmZp": {
-    "description": "Credit for the french translation of TI Assistant.",
+    "description": "Credit for the french translation of JoboTracker.",
     "defaultMessage": "Tradução em Francês: {name}"
   },
   "LD7frS": {
@@ -648,7 +648,7 @@
     "defaultMessage": "Votos"
   },
   "VZ+RJH": {
-    "description": "Credit for helping to program TI Assistant.",
+    "description": "Credit for helping to program JoboTracker.",
     "defaultMessage": "Programação: {name}"
   },
   "VjlCY0": {
@@ -680,7 +680,7 @@
     "defaultMessage": "Agrupar por"
   },
   "X3Nzbr": {
-    "description": "Label for section listing out people that regularly donate to TI Assistant.",
+    "description": "Label for section listing out people that regularly donate to JoboTracker.",
     "defaultMessage": "Patrons"
   },
   "X3VPhD": {
@@ -688,8 +688,8 @@
     "defaultMessage": "Extras"
   },
   "X7zR7a": {
-    "description": "Label for a section about helping TI Assistant",
-    "defaultMessage": "Apoie o TI Assistant"
+    "description": "Label for a section about helping JoboTracker",
+    "defaultMessage": "Apoie o JoboTracker"
   },
   "XG4lKH": {
     "description": "Label on a hover menu used to return a tech.",
@@ -780,7 +780,7 @@
     "defaultMessage": "Opções"
   },
   "dENKlQ": {
-    "description": "Label for section listing out everyone that has donated to TI Assistant.",
+    "description": "Label for section listing out everyone that has donated to JoboTracker.",
     "defaultMessage": "Apoiadores"
   },
   "dNmJ1r": {
@@ -932,7 +932,7 @@
     "defaultMessage": "Porta-Voz"
   },
   "kq4/fY": {
-    "description": "Credit for the german translation of TI Assistant.",
+    "description": "Credit for the german translation of JoboTracker.",
     "defaultMessage": "Tradução em Alemão: {name}"
   },
   "l6pQCt": {

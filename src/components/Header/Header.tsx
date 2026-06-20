@@ -40,6 +40,7 @@ export default function Header({ archive }: { archive?: boolean }) {
   const [qrCode, setQrCode] = useState<string>();
 
   useEffect(() => {
+    let cancelled = false;
     if (!gameId) {
       setQrCode(undefined);
       return;
@@ -47,25 +48,34 @@ export default function Header({ archive }: { archive?: boolean }) {
 
     const localePrefix =
       intl.locale && intl.locale !== "en" ? `/${intl.locale}` : "/en";
-    getShareGameUrl(gameId, localePrefix.slice(1)).then((url) => {
-      QRCode.toDataURL(
-        url,
-        {
-          color: {
-            dark: "#eeeeeeff",
-            light: "#222222ff",
+    getShareGameUrl(gameId, localePrefix.slice(1))
+      .then((url) => {
+        QRCode.toDataURL(
+          url,
+          {
+            color: {
+              dark: "#eeeeeeff",
+              light: "#222222ff",
+            },
+            width: 164,
+            margin: 4,
           },
-          width: 164,
-          margin: 4,
-        },
-        (err, url) => {
-          if (err) {
-            throw err;
-          }
-          setQrCode(url);
-        },
-      );
-    });
+          (err, url) => {
+            if (!cancelled && !err) {
+              setQrCode(url);
+            }
+          },
+        );
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setQrCode(undefined);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [gameId, intl.locale]);
 
   let gameFinished = false;

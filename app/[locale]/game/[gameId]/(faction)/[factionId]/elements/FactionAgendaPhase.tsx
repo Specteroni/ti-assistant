@@ -7,9 +7,8 @@ import {
 import LabeledDiv from "../../../../../../../src/components/LabeledDiv/LabeledDiv";
 import LabeledLine from "../../../../../../../src/components/LabeledLine/LabeledLine";
 import { Selector } from "../../../../../../../src/components/Selector/Selector";
+import FactionComponents from "../../../../../../../src/components/FactionComponents/FactionComponents";
 import {
-  canFactionVote,
-  computeRemainingVotes,
   getTargets,
   translateOutcome,
 } from "../../../../../../../src/components/VoteBlock/VoteBlock";
@@ -28,6 +27,7 @@ import { useFactions } from "../../../../../../../src/context/factionDataHooks";
 import { useObjectives } from "../../../../../../../src/context/objectiveDataHooks";
 import { useGameState } from "../../../../../../../src/context/stateDataHooks";
 import { ClientOnlyHoverMenu } from "../../../../../../../src/HoverMenu";
+import PlanetDiv from "../../../../../../../src/components/PlanetRow/PlanetDiv";
 import InfluenceSVG from "../../../../../../../src/icons/planets/Influence";
 import { SelectableRow } from "../../../../../../../src/SelectableRow";
 import {
@@ -42,8 +42,16 @@ import {
 } from "../../../../../../../src/util/api/actionLog";
 import { useDataUpdate } from "../../../../../../../src/util/api/dataUpdate";
 import { Events } from "../../../../../../../src/util/api/events";
+import {
+  canFactionVote,
+  computeRemainingAgendaVotes,
+} from "../../../../../../../src/util/agendaVoting";
 import { computeVotes } from "../../../../../../../src/util/agendaVotes";
 import { getUncommittedAgendaFactions } from "../../../../../../../src/util/helpers";
+import {
+  applyAllPlanetAttachments,
+  filterToClaimedPlanets,
+} from "../../../../../../../src/util/planets";
 import { Optional } from "../../../../../../../src/util/types/types";
 import { rem } from "../../../../../../../src/util/util";
 import styles from "../faction-page.module.scss";
@@ -240,7 +248,7 @@ export default function FactionAgendaPhase({
     });
   const isTie = selectedTargets.length !== 1;
 
-  let { influence, extraVotes } = computeRemainingVotes(
+  let { influence, extraVotes } = computeRemainingAgendaVotes(
     factionId,
     factions,
     planets,
@@ -288,7 +296,13 @@ export default function FactionAgendaPhase({
   const items = Math.min((targets ?? []).length, 12);
   const isActiveVoter = state.votingStarted && state.activeplayer === factionId;
   const votingComplete = state.votingStarted && state.activeplayer === "None";
-  const activeVoter = state.activeplayer && state.activeplayer !== "None";
+  const activeVoter =
+    state.activeplayer && state.activeplayer !== "None"
+      ? state.activeplayer
+      : undefined;
+  const showWaitingForStart = !state.votingStarted && !isSpeaker;
+  const showWaitingForTurn =
+    state.votingStarted && !!activeVoter && !isActiveVoter;
   const uncommittedFactions = new Set(
     state.votingStarted ? getUncommittedAgendaFactions(state, factions) : [],
   );
@@ -302,6 +316,17 @@ export default function FactionAgendaPhase({
       (!!factionVotes?.target &&
         factionVotes.target !== "Abstain" &&
         committedVoteTotal > 0));
+  const votingPlanets = applyAllPlanetAttachments(
+    filterToClaimedPlanets(planets, factionId).filter((planet) => {
+      return (
+        planet.state !== "PURGED" &&
+        !planet.attributes.includes("space-station") &&
+        !planet.attributes.includes("ocean") &&
+        !planet.attributes.includes("synthetic")
+      );
+    }),
+    attachments,
+  );
 
   return (
     <>
@@ -402,7 +427,8 @@ export default function FactionAgendaPhase({
           style={{ justifyContent: "center", width: "100%" }}
         >
           <button
-            style={{ width: "fit-content" }}
+            type="button"
+            style={agendaButtonStyle(false, viewOnly)}
             onClick={startVoting}
             disabled={viewOnly}
           >
@@ -440,24 +466,9 @@ export default function FactionAgendaPhase({
           </div>
         ) : (
           <React.Fragment>
-            {!isActiveVoter && activeVoter ? (
-              <div
-                className="flexRow"
-                style={{
-                  color: "var(--neutral-border)",
-                  fontSize: rem(18),
-                  justifyContent: "flex-start",
-                  paddingLeft: rem(8),
-                  width: "100%",
-                }}
-              >
-                <FormattedMessage
-                  id="Agenda.WaitingForVoter"
-                  defaultMessage="Waiting for {faction}"
-                  description="Text telling a player which faction is currently voting."
-                  values={{ faction: activeVoter }}
-                />
-              </div>
+            {showWaitingForStart ? <VotingLockedNotice /> : null}
+            {showWaitingForTurn ? (
+              <VotingLockedNotice activeVoter={activeVoter} />
             ) : null}
             <div
               className="flexColumn"
@@ -600,6 +611,10 @@ export default function FactionAgendaPhase({
                   ) : null}
                 </div>
               </div>
+              <AgendaVotingPlanets
+                canEditVotes={canEditVotes}
+                planets={votingPlanets}
+              />
             </div>
           </React.Fragment>
         )}
@@ -612,7 +627,12 @@ export default function FactionAgendaPhase({
             width: "100%",
           }}
         >
-          <button onClick={commitVotes} disabled={viewOnly || !canCommitVotes}>
+          <button
+            type="button"
+            onClick={commitVotes}
+            disabled={viewOnly || !canCommitVotes}
+            style={agendaButtonStyle(false, viewOnly || !canCommitVotes)}
+          >
             <FormattedMessage
               id="Agenda.CommitVotes"
               defaultMessage="Commit Votes"
@@ -620,9 +640,14 @@ export default function FactionAgendaPhase({
             />
           </button>
           <button
+            type="button"
             className={factionVotes?.target === "Abstain" ? "selected" : ""}
             onClick={abstainAndCommit}
             disabled={viewOnly || !isActiveVoter}
+            style={agendaButtonStyle(
+              factionVotes?.target === "Abstain",
+              viewOnly || !isActiveVoter,
+            )}
           >
             <FormattedMessage
               id="LaXLjN"
@@ -755,4 +780,147 @@ export default function FactionAgendaPhase({
       </div>
     </>
   );
+}
+
+function AgendaVotingPlanets({
+  canEditVotes,
+  planets,
+}: {
+  canEditVotes: boolean;
+  planets: Planet[];
+}) {
+  if (planets.length === 0) {
+    return null;
+  }
+
+  return (
+    <div
+      style={{
+        boxSizing: "border-box",
+        paddingTop: rem(8),
+        width: "100%",
+      }}
+    >
+      <LabeledLine
+        label={
+          <FormattedMessage
+            id="1fNqTf"
+            description="Planets."
+            defaultMessage="Planets"
+          />
+        }
+      />
+      <div
+        style={{
+          alignItems: "flex-start",
+          boxSizing: "border-box",
+          display: "flex",
+          flexDirection: "row",
+          flexWrap: "wrap",
+          gap: rem(8),
+          justifyContent: "center",
+          paddingTop: rem(4),
+          width: "100%",
+        }}
+      >
+        {planets.map((planet) => {
+          return (
+            <PlanetDiv
+              key={planet.id}
+              canToggleState={canEditVotes}
+              planet={planet}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function VotingLockedNotice({ activeVoter }: { activeVoter?: FactionId }) {
+  return (
+    <div
+      className="flexColumn"
+      style={{
+        alignItems: "center",
+        backgroundColor: "rgba(160, 160, 160, 0.12)",
+        border: "2px solid var(--neutral-border)",
+        borderRadius: rem(8),
+        boxShadow: "0 0 0 1px var(--background-color)",
+        boxSizing: "border-box",
+        color: "var(--foreground-color)",
+        gap: rem(3),
+        margin: `${rem(2)} auto ${rem(8)}`,
+        padding: `${rem(7)} ${rem(10)}`,
+        textAlign: "center",
+        width: "min(100%, 38rem)",
+      }}
+    >
+      <div
+        className="flexRow"
+        style={{
+          color: "var(--foreground-color)",
+          fontFamily: "var(--main-font)",
+          fontSize: rem(18),
+          gap: rem(6),
+          lineHeight: 1,
+        }}
+      >
+        {activeVoter ? (
+          <>
+            <FactionComponents.Icon factionId={activeVoter} size={18} />
+            <FormattedMessage
+              id="Agenda.WaitingForVoter"
+              defaultMessage="Waiting for {faction}"
+              description="Text telling a player which faction is currently voting."
+              values={{ faction: <FactionComponents.Name factionId={activeVoter} /> }}
+            />
+          </>
+        ) : (
+          <FormattedMessage
+            id="Agenda.WaitingForVotingStart"
+            defaultMessage="Waiting for voting to start"
+            description="Text telling a player agenda voting has not started yet."
+          />
+        )}
+      </div>
+      <div
+        style={{
+          color: "var(--muted-text)",
+          fontSize: rem(12),
+          lineHeight: 1.15,
+        }}
+      >
+        <FormattedMessage
+          id="Agenda.VotingControlsLocked"
+          defaultMessage="Commit and abstain unlock on your turn."
+          description="Text explaining why agenda vote submission controls are unavailable."
+        />
+      </div>
+    </div>
+  );
+}
+
+function agendaButtonStyle(selected = false, disabled = false) {
+  return {
+    backgroundColor: disabled
+      ? "var(--disabled-bg)"
+      : selected
+        ? "var(--hovered-bg)"
+        : "var(--interactive-bg)",
+    border: `2px solid ${
+      selected && !disabled ? "var(--foreground-color)" : "var(--neutral-border)"
+    }`,
+    borderRadius: rem(6),
+    boxShadow: disabled
+      ? "none"
+      : selected
+      ? `0 0 ${rem(7)} var(--neutral-border)`
+      : "0 0 0 1px var(--background-color)",
+    color: disabled ? "var(--passed-text)" : "var(--foreground-color)",
+    cursor: disabled ? "not-allowed" : "pointer",
+    fontFamily: "var(--main-font)",
+    fontSize: rem(15),
+    padding: `${rem(5)} ${rem(12)}`,
+  };
 }

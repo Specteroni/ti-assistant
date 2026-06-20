@@ -829,10 +829,12 @@ function ToggleStructureEvent(
 function UnclaimPlanetEvent(
   factionId: FactionId,
   planetId: PlanetId,
+  forceUnclaim = false,
 ): UnclaimPlanetData {
   return {
     action: "UNCLAIM_PLANET",
     event: {
+      forceUnclaim,
       faction: factionId,
       planet: planetId,
     },

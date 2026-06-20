@@ -15,7 +15,8 @@ import { mergeLocalTimers } from "../../src/util/timers";
 import { ActionLog } from "../../src/util/types/types";
 import { DatabaseFnsContext } from "./contexts";
 
-const LOCAL_FILE_DB_POLL_INTERVAL_MS = 1000;
+const LOCAL_FILE_DB_POLL_INTERVAL_MS = 1500;
+const LOCAL_FILE_DB_ACTION_LOG_LIMIT = 500;
 
 export default function DBListener({
   gameId,
@@ -34,8 +35,9 @@ export default function DBListener({
       async function pollLocalSnapshot() {
         try {
           const archiveQuery = archive ? "?archive=1" : "";
+          const querySeparator = archiveQuery ? "&" : "?";
           const response = await fetch(
-            `/api/${gameId}/snapshot${archiveQuery}`,
+            `/api/${gameId}/snapshot${archiveQuery}${querySeparator}maxLogEntries=${LOCAL_FILE_DB_ACTION_LOG_LIMIT}`,
             {
               cache: "no-store",
               credentials: "include",

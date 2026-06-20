@@ -1,4 +1,4 @@
-import { CSSProperties, PropsWithChildren } from "react";
+import { CSSProperties, PropsWithChildren, ReactNode, useState } from "react";
 import styles from "./SelectableRow.module.scss";
 import { rem } from "./util/util";
 
@@ -6,6 +6,8 @@ interface SelectableRowProps<Type extends string> {
   itemId: Type;
   selectItem?: (itemId: Type) => void;
   removeItem?: (itemId: Type) => void;
+  confirmRemove?: boolean;
+  removeLabel?: ReactNode;
   style?: CSSProperties;
   viewOnly?: boolean;
 }
@@ -13,11 +15,14 @@ interface SelectableRowProps<Type extends string> {
 export function SelectableRow<Type extends string>({
   children,
   itemId,
+  confirmRemove,
+  removeLabel,
   selectItem,
   removeItem,
   style,
   viewOnly,
 }: PropsWithChildren<SelectableRowProps<Type>>) {
+  const [confirmingRemove, setConfirmingRemove] = useState(false);
   const iconStyle: CSSProperties = {
     textShadow: "none",
   };
@@ -42,8 +47,46 @@ export function SelectableRow<Type extends string>({
     }
   }
 
+  const removeButton = !viewOnly && removeItem ? (
+    <button
+      className={
+        removeLabel
+          ? `${styles.LabeledRemoveButton} clickable negative`
+          : "clickable negative iconButton"
+      }
+      style={
+        removeLabel
+          ? undefined
+          : {
+              ...iconStyle,
+              width:
+                confirmingRemove || removeLabel ? undefined : iconStyle.width,
+              paddingInline:
+                confirmingRemove || removeLabel ? rem(4) : undefined,
+            }
+      }
+      onClick={() => {
+        if (confirmRemove && !confirmingRemove) {
+          setConfirmingRemove(true);
+          return;
+        }
+        removeItem(itemId);
+        setConfirmingRemove(false);
+      }}
+      onBlur={() => setConfirmingRemove(false)}
+      title={confirmingRemove ? "Click again to remove" : "Remove"}
+    >
+      {confirmingRemove ? "Confirm" : (removeLabel ?? <>&#x2715;</>)}
+    </button>
+  ) : null;
+
   return (
-    <div className={styles.SelectableRow} style={style}>
+    <div
+      className={`${styles.SelectableRow} ${
+        removeLabel ? styles.withLabeledRemove : ""
+      }`}
+      style={style}
+    >
       {!viewOnly && selectItem ? (
         <button
           className="icon clickable positive iconButton"
@@ -53,16 +96,9 @@ export function SelectableRow<Type extends string>({
           +
         </button>
       ) : null}
-      {!viewOnly && removeItem ? (
-        <button
-          className="clickable negative iconButton"
-          style={iconStyle}
-          onClick={() => removeItem(itemId)}
-        >
-          &#x2715;
-        </button>
-      ) : null}
+      {!removeLabel ? removeButton : null}
       {children}
+      {removeLabel ? removeButton : null}
     </div>
   );
 }

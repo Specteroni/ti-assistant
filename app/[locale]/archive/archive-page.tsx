@@ -236,7 +236,7 @@ export default function ArchivePage({
 
   return (
     <div className={styles.GamePage}>
-      <Sidebars left="TI ASSISTANT" right="ARCHIVE" />
+      <Sidebars left="JOBOTRACKER" right="ARCHIVE" />
       <LabeledDiv
         className={styles.Filters}
         innerClass={styles.FilterContent}

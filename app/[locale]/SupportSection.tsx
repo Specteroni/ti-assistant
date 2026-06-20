@@ -11,8 +11,8 @@ export default function SupportSection({ intl }: { intl: IntlShape }) {
     <LabeledDiv
       label={intl.formatMessage({
         id: "X7zR7a",
-        defaultMessage: "Help support TI Assistant",
-        description: "Label for a section about helping TI Assistant",
+        defaultMessage: "Help support JoboTracker",
+        description: "Label for a section about helping JoboTracker",
       })}
       style={{
         marginInline: "5%",

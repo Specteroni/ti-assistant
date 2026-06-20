@@ -1,17 +1,26 @@
 import { TacticalAction } from "../../../../../../../../src/components/TacticalAction";
+import Conditional from "../../../../../../../../src/components/Conditional/Conditional";
+import FactionComponents from "../../../../../../../../src/components/FactionComponents/FactionComponents";
+import LabeledDiv from "../../../../../../../../src/components/LabeledDiv/LabeledDiv";
+import ProduceUnitsSection from "../../../../../../../../src/components/ProduceUnitsSection/ProduceUnitsSection";
 import {
   useCurrentTurn,
   useOptions,
   usePlanets,
 } from "../../../../../../../../src/context/dataHooks";
+import { useFactionColors } from "../../../../../../../../src/context/factionDataHooks";
+import { useOrderedFactionIds } from "../../../../../../../../src/context/gameDataHooks";
 import { useObjectives } from "../../../../../../../../src/context/objectiveDataHooks";
 import {
   getClaimedPlanets,
   getScoredObjectives,
 } from "../../../../../../../../src/util/actionLog";
+import { rem } from "../../../../../../../../src/util/util";
 
 const Warfare = {
   Primary,
+  Secondary,
+  AllSecondaries,
 };
 
 export default Warfare;
@@ -105,5 +114,54 @@ function Primary({ factionId }: { factionId: FactionId }) {
       scorableObjectives={scorableObjectives}
       scoredObjectives={scoredActionPhaseObjectives}
     />
+  );
+}
+
+function Secondary({ factionId }: { factionId: FactionId }) {
+  const colors = useFactionColors(factionId);
+
+  return (
+    <Conditional appSection="PLANETS">
+      <LabeledDiv
+        label={<FactionComponents.Name factionId={factionId} />}
+        color={colors.color}
+        borderColor={colors.border}
+        blur
+      >
+        <ProduceUnitsSection factionId={factionId} />
+      </LabeledDiv>
+    </Conditional>
+  );
+}
+
+function AllSecondaries({ activeFactionId }: { activeFactionId: FactionId }) {
+  const orderedFactionIds = useOrderedFactionIds(
+    "SPEAKER",
+    undefined,
+    activeFactionId,
+  );
+
+  return (
+    <Conditional appSection="PLANETS">
+      <div
+        className="flexRow mediumFont"
+        style={{
+          paddingTop: rem(4),
+          width: "100%",
+          flexWrap: "wrap",
+        }}
+      >
+        {orderedFactionIds.map((factionId) => {
+          if (factionId === activeFactionId) {
+            return null;
+          }
+          return (
+            <div key={factionId} style={{ width: "48%" }}>
+              <Secondary factionId={factionId} />
+            </div>
+          );
+        })}
+      </div>
+    </Conditional>
   );
 }

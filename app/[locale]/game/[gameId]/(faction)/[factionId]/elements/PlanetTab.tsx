@@ -1,4 +1,4 @@
-import { use, useEffect, useMemo, useRef, useState } from "react";
+import { ReactNode, use, useEffect, useMemo, useRef, useState } from "react";
 import { FormattedMessage } from "react-intl";
 import { AddPlanetList } from "../../../../../../../src/AddPlanetList";
 import { ModalContent } from "../../../../../../../src/components/Modal/Modal";
@@ -6,10 +6,7 @@ import PlanetDiv from "../../../../../../../src/components/PlanetRow/PlanetDiv";
 import PlanetRow from "../../../../../../../src/components/PlanetRow/PlanetRow";
 import ResourcesIcon from "../../../../../../../src/components/ResourcesIcon/ResourcesIcon";
 import TechSkipIcon from "../../../../../../../src/components/TechSkipIcon/TechSkipIcon";
-import {
-  ModalContext,
-  SettingsContext,
-} from "../../../../../../../src/context/contexts";
+import { ModalContext } from "../../../../../../../src/context/contexts";
 import {
   useActionLog,
   useAttachments,
@@ -31,13 +28,16 @@ import {
 import { rem } from "../../../../../../../src/util/util";
 
 type CalculatorMode = "EXHAUST" | "READY";
+type PlanetTabMode = "spend" | "manage";
 
 export default function PlanetTab({
   active,
   factionId,
+  mode = "spend",
 }: {
   active: boolean;
   factionId: FactionId;
+  mode?: PlanetTabMode;
 }) {
   const attachments = useAttachments();
   const actionLog = useActionLog();
@@ -49,8 +49,6 @@ export default function PlanetTab({
   const viewOnly = useViewOnly();
   const xxekirGrom = useLeader("Xxekir Grom");
   const { openModal } = use(ModalContext);
-  const { settings } = use(SettingsContext);
-  const planetView = settings["faction-planet-view"];
 
   const claimedPlanets = filterToClaimedPlanets(planets, factionId);
   const updatedPlanets = applyAllPlanetAttachments(claimedPlanets, attachments);
@@ -59,6 +57,7 @@ export default function PlanetTab({
   }, [updatedPlanets]);
   const [spentBaseline, setSpentBaseline] =
     useState<PlanetId[]>(exhaustedPlanetIds);
+  const [removeMode, setRemoveMode] = useState(false);
   const actionBaselineRef = useRef<Record<string, boolean>>({});
   const previousActionLogRef = useRef(actionLog);
   const previousUndoCountRef = useRef(state.undoCount ?? 0);
@@ -125,6 +124,9 @@ export default function PlanetTab({
   }
 
   function handleCalculatorAction() {
+    if (agendaVoteMode || !calculatorMode) {
+      return;
+    }
     resetCalculator();
   }
 
@@ -229,13 +231,19 @@ export default function PlanetTab({
   }, [actionLogKey, state.undoCount]);
 
   useEffect(() => {
-    if (active && !agendaVotingStarted) {
+    if (mode === "spend" && active && !agendaVoteMode) {
       setSpentBaseline(exhaustedPlanetIds);
     }
     // During agenda voting, committed votes define the next baseline; opening
     // the tab should not make preloaded vote planets "previously exhausted."
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, agendaVotingStarted]);
+  }, [active, agendaVoteMode, mode]);
+
+  const spendMode = mode === "spend";
+  const displayedActivePlanets = spendMode ? activePlanets : updatedPlanets;
+  const displayedAlreadyExhaustedPlanets = spendMode
+    ? alreadyExhaustedPlanets
+    : [];
 
   useEffect(() => {
     if (agendaVoteCommitted !== wasAgendaVoteCommitted.current) {
@@ -254,67 +262,30 @@ export default function PlanetTab({
           alignItems: "center",
           display: "grid",
           gap: rem(8),
-          gridTemplateColumns: "minmax(0, 1fr) auto minmax(0, 1fr)",
+          gridTemplateColumns: spendMode
+            ? "minmax(0, 1fr)"
+            : "minmax(0, 1fr) minmax(0, 1fr)",
           minHeight: rem(40),
           width: "100%",
         }}
       >
-        <div style={{ justifySelf: "start" }}>
-          <button
-            onClick={() =>
-              openModal(
-                <ModalContent
-                  title={
-                    <FormattedMessage
-                      id="PrGqwQ"
-                      description="Label for adding a planet."
-                      defaultMessage="Add Planet"
-                    />
-                  }
-                >
-                  <AddPlanetList
-                    factionId={factionId}
-                    planets={planets}
-                    addPlanet={(planetId) =>
-                      dataUpdate(Events.ClaimPlanetEvent(factionId, planetId))
-                    }
-                  />
-                </ModalContent>,
-              )
-            }
-            disabled={viewOnly}
-          >
-            <FormattedMessage
-              id="PrGqwQ"
-              description="Label for adding a planet."
-              defaultMessage="Add Planet"
-            />
-          </button>
-        </div>
-        <div
-          title="Spent planets, resources, and influence since the last exhaust reset"
-          style={{
-            alignItems: "flex-start",
-            display: "flex",
-            flexDirection: "row",
-            flexWrap: "wrap",
-            gap: rem(8),
-            justifyContent: "center",
-            justifySelf: "center",
-          }}
-        >
+        {spendMode ? (
           <div
+            title="Spent planets, resources, and influence since the last exhaust reset"
             style={{
-              alignItems: "center",
+              alignItems: "flex-start",
               display: "flex",
-              flexDirection: "column",
-              gap: rem(4),
+              flexDirection: "row",
+              flexWrap: "wrap",
+              gap: rem(8),
+              justifyContent: "center",
+              justifySelf: "center",
             }}
           >
             <CounterLabel>Calculator:</CounterLabel>
             <button
               onClick={handleCalculatorAction}
-              disabled={viewOnly}
+              disabled={viewOnly || agendaVoteMode}
               style={{
                 background: "var(--background-color)",
                 border: "2px solid var(--neutral-border)",
@@ -324,35 +295,99 @@ export default function PlanetTab({
                 fontSize: rem(14.4),
                 padding: `${rem(3.6)} ${rem(10.8)}`,
               }}
-              title="Update calculator baseline"
+              title={
+                agendaVoteMode
+                  ? "Planet calculator updates are disabled during agenda voting"
+                  : "Update calculator baseline"
+              }
             >
               <CalculatorActionLabel mode={calculatorMode} />
             </button>
+            <PlanetValueCounter
+              planets={numSpentPlanets}
+              resources={spentResources}
+              influence={spentInfluence}
+              height={52}
+            />
+            <TechSkipCounter count={numSpentTechSkips} />
           </div>
-          <PlanetValueCounter
-            planets={numSpentPlanets}
-            resources={spentResources}
-            influence={spentInfluence}
-            height={52}
-          />
-          <TechSkipCounter count={numSpentTechSkips} />
-        </div>
-        <div />
+        ) : (
+          <>
+            <div style={{ justifySelf: "start" }}>
+              <button
+                onClick={() =>
+                  openModal(
+                    <ModalContent
+                      title={
+                        <FormattedMessage
+                          id="PrGqwQ"
+                          description="Label for adding a planet."
+                          defaultMessage="Add Planet"
+                        />
+                      }
+                    >
+                      <AddPlanetList
+                        factionId={factionId}
+                        planets={planets}
+                        addPlanet={(planetId) =>
+                          dataUpdate(
+                            Events.ClaimPlanetEvent(factionId, planetId),
+                          )
+                        }
+                      />
+                    </ModalContent>,
+                  )
+                }
+                disabled={viewOnly}
+                style={actionButtonStyle()}
+              >
+                <FormattedMessage
+                  id="PrGqwQ"
+                  description="Label for adding a planet."
+                  defaultMessage="Add Planet"
+                />
+              </button>
+            </div>
+            <div style={{ justifySelf: "end" }}>
+              <RemoveModeToggle
+                active={removeMode}
+                inactiveLabel={
+                  <FormattedMessage
+                    id="PlanetTab.RemoveModeOff"
+                    defaultMessage="Remove Planets"
+                    description="Toggle label enabling planet removal mode."
+                  />
+                }
+                activeLabel={
+                  <FormattedMessage
+                    id="PlanetTab.RemoveModeOn"
+                    defaultMessage="Removing Planets"
+                    description="Toggle label indicating planet removal mode is active."
+                  />
+                }
+                setActive={setRemoveMode}
+                viewOnly={viewOnly}
+              />
+            </div>
+          </>
+        )}
       </div>
-      {planetView === "GRID" ? (
+      {spendMode ? (
         <PlanetGridSections
-          activePlanets={activePlanets}
-          alreadyExhaustedPlanets={alreadyExhaustedPlanets}
+          activePlanets={displayedActivePlanets}
+          alreadyExhaustedPlanets={displayedAlreadyExhaustedPlanets}
           canTogglePlanet={canTogglePlanetForCalculator}
         />
       ) : (
         <PlanetRowSections
-          activePlanets={activePlanets}
-          alreadyExhaustedPlanets={alreadyExhaustedPlanets}
-          canTogglePlanet={canTogglePlanetForCalculator}
+          activePlanets={displayedActivePlanets}
+          alreadyExhaustedPlanets={displayedAlreadyExhaustedPlanets}
+          canTogglePlanet={() => false}
           factionId={factionId}
+          mode={mode}
+          removeMode={removeMode}
           removePlanet={(planetId) =>
-            dataUpdate(Events.UnclaimPlanetEvent(factionId, planetId))
+            dataUpdate(Events.UnclaimPlanetEvent(factionId, planetId, true))
           }
         />
       )}
@@ -429,12 +464,16 @@ function PlanetRowSections({
   alreadyExhaustedPlanets,
   canTogglePlanet,
   factionId,
+  mode,
+  removeMode,
   removePlanet,
 }: {
   activePlanets: Planet[];
   alreadyExhaustedPlanets: Planet[];
   canTogglePlanet: (planet: Planet) => boolean;
   factionId: FactionId;
+  mode: PlanetTabMode;
+  removeMode: boolean;
   removePlanet: (planetId: PlanetId) => void;
 }) {
   return (
@@ -449,7 +488,9 @@ function PlanetRowSections({
       <PlanetRows
         canTogglePlanet={canTogglePlanet}
         factionId={factionId}
+        mode={mode}
         planets={activePlanets}
+        removeMode={removeMode}
         removePlanet={removePlanet}
       />
       {alreadyExhaustedPlanets.length > 0 ? (
@@ -458,7 +499,9 @@ function PlanetRowSections({
           <PlanetRows
             canTogglePlanet={canTogglePlanet}
             factionId={factionId}
+            mode={mode}
             planets={alreadyExhaustedPlanets}
+            removeMode={removeMode}
             removePlanet={removePlanet}
           />
         </>
@@ -470,14 +513,20 @@ function PlanetRowSections({
 function PlanetRows({
   canTogglePlanet,
   factionId,
+  mode,
   planets,
+  removeMode,
   removePlanet,
 }: {
   canTogglePlanet: (planet: Planet) => boolean;
   factionId: FactionId;
+  mode: PlanetTabMode;
   planets: Planet[];
+  removeMode: boolean;
   removePlanet: (planetId: PlanetId) => void;
 }) {
+  const spendMode = mode === "spend";
+
   return (
     <>
       {planets.map((planet) => {
@@ -486,13 +535,70 @@ function PlanetRows({
             key={planet.id}
             canToggleState={canTogglePlanet(planet)}
             factionId={factionId}
+            opts={{
+              hideAttachButton: spendMode,
+              hideManagementControls: spendMode,
+              showAttachButton: !spendMode,
+            }}
             planet={planet}
-            removePlanet={removePlanet}
+            removePlanet={removeMode ? removePlanet : undefined}
           />
         );
       })}
     </>
   );
+}
+
+function RemoveModeToggle({
+  active,
+  activeLabel,
+  inactiveLabel,
+  setActive,
+  viewOnly,
+}: {
+  active: boolean;
+  activeLabel: ReactNode;
+  inactiveLabel: ReactNode;
+  setActive: (active: boolean) => void;
+  viewOnly: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={() => setActive(!active)}
+      disabled={viewOnly}
+      style={{
+        backgroundColor: active ? "var(--red-tech-color)" : "var(--interactive-bg)",
+        border: `2px solid ${
+          active ? "var(--red-tech-color)" : "var(--neutral-border)"
+        }`,
+        borderRadius: rem(6),
+        boxShadow: active
+          ? `0 0 ${rem(8)} var(--red-tech-color)`
+          : "0 0 0 1px var(--background-color)",
+        color: "var(--foreground-color)",
+        fontFamily: "var(--main-font)",
+        fontSize: rem(14),
+        padding: `${rem(3)} ${rem(10)}`,
+      }}
+    >
+      {active ? activeLabel : inactiveLabel}
+    </button>
+  );
+}
+
+function actionButtonStyle() {
+  return {
+    backgroundColor: "var(--interactive-bg)",
+    border: "2px solid var(--neutral-border)",
+    borderRadius: rem(6),
+    boxShadow: "0 0 0 1px var(--background-color)",
+    color: "var(--foreground-color)",
+    fontFamily: "var(--main-font)",
+    fontSize: rem(14),
+    padding: `${rem(5)} ${rem(12)}`,
+  };
 }
 
 function AlreadyExhaustedDivider() {

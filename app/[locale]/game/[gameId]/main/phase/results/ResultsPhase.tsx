@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { IntlShape, useIntl } from "react-intl";
 import Chip from "../../../../../../../src/components/Chip/Chip";
 import { GameLog } from "../../../../../../../src/components/GameLog/GameLog";
@@ -23,6 +23,7 @@ import TechGraph from "./TechGraph";
 import Timers from "./Timers";
 import { VictoryPointsGraph } from "./VictoryPointsGraph";
 import ChipGroup from "../../../../../../../src/components/Chip/ChipGroup";
+import { buildGameLog } from "./game-log.worker";
 
 type View = "Game Log" | "Victory Points" | "Techs" | "Map Lapse" | "Timers";
 
@@ -128,8 +129,6 @@ function InnerContent({ viewing }: { viewing: View }) {
   const intl = useIntl();
   const gameData = useGameData();
 
-  const worker = useRef<Optional<Worker>>(undefined);
-
   const [condensedData, setCondensedData] =
     useState<Optional<CondensedGameData>>();
 
@@ -142,34 +141,31 @@ function InnerContent({ viewing }: { viewing: View }) {
     return buildSetupGameData(gameData);
   }, [gameData]);
 
-  const initialGameData = useMemo(() => {
-    return buildInitialGameData(setupGameData, intl);
-  }, [setupGameData, intl]);
-
   const baseData = useMemo(() => {
     return getBaseData(intl);
   }, [intl]);
 
+  const initialGameData = useMemo(() => {
+    return buildInitialGameData(setupGameData, intl, baseData);
+  }, [setupGameData, intl, baseData]);
+
   useEffect(() => {
-    worker.current = new Worker(
-      new URL("./game-log.worker.tsx", import.meta.url),
-      {
-        name: "game-log",
-        type: "module",
-      },
-    );
+    let cancelled = false;
+    setCondensedData(undefined);
+    const timeoutId = window.setTimeout(() => {
+      const nextCondensedData = buildGameLog(
+        initialGameData,
+        reversedActionLog,
+        baseData,
+      );
+      if (!cancelled) {
+        setCondensedData(nextCondensedData);
+      }
+    }, 0);
 
-    worker.current.postMessage({
-      reversedActionLog,
-      initialGameData,
-      baseData,
-    });
-
-    worker.current.onmessage = (event) => {
-      setCondensedData(event.data);
-    };
     return () => {
-      worker.current?.terminate();
+      cancelled = true;
+      window.clearTimeout(timeoutId);
     };
   }, [initialGameData, reversedActionLog, baseData]);
 
@@ -212,20 +208,6 @@ function InnerContent({ viewing }: { viewing: View }) {
   );
 }
 
-let getFactions: DataFunction<FactionId, BaseFaction> = () => {
-  return {};
-};
-import("../../../../../../../server/data/factions").then((module) => {
-  getFactions = module.getFactions;
-});
-
-let getPlanets: DataFunction<PlanetId, BasePlanet> = () => {
-  return {};
-};
-import("../../../../../../../server/data/planets").then((module) => {
-  getPlanets = module.getPlanets;
-});
-
 function buildInitialGameData(
   setupData: {
     factions: SetupFaction[];
@@ -233,6 +215,7 @@ function buildInitialGameData(
     options: Options;
   },
   intl: IntlShape,
+  baseData: BaseData,
 ) {
   const gamePlanets: Partial<Record<PlanetId, GamePlanet>> = {};
 
@@ -250,7 +233,7 @@ function buildInitialGameData(
       }
 
       // Get home planets for each faction.
-      const homeBasePlanets = Object.values(getPlanets(intl)).filter(
+      const homeBasePlanets = Object.values(baseData.planets).filter(
         (planet) => planet.faction === faction.name && planet.home,
       );
       homeBasePlanets.forEach((planet) => {
@@ -261,7 +244,7 @@ function buildInitialGameData(
       });
 
       // Get starting techs for each faction.
-      const baseFaction = getFactions(intl)[faction.id];
+      const baseFaction = baseData.factions[faction.id];
       if (!baseFaction) {
         return {
           // Client specified values

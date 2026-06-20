@@ -158,13 +158,15 @@ export class UnclaimPlanetHandler implements Handler {
     let prevState: Optional<PlanetState> = this.data.event.prevState;
     let claimedThisTurn: boolean = false;
     const currentTurn = getCurrentTurnLogEntries(this.gameData.actionLog ?? []);
-    for (const entry of currentTurn) {
-      const action = this.getActionLogAction(entry);
-      if (action === "DELETE") {
-        const claimEvent = (entry.data as ClaimPlanetData).event;
-        prevOwner = claimEvent.prevOwner;
-        prevState = claimEvent.prevState;
-        claimedThisTurn = true;
+    if (!this.data.event.forceUnclaim) {
+      for (const entry of currentTurn) {
+        const action = this.getActionLogAction(entry);
+        if (action === "DELETE") {
+          const claimEvent = (entry.data as ClaimPlanetData).event;
+          prevOwner = claimEvent.prevOwner;
+          prevState = claimEvent.prevState;
+          claimedThisTurn = true;
+        }
       }
     }
 

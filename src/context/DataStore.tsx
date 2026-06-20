@@ -256,7 +256,8 @@ function buildDatabaseFns(database: Database): DatabaseFns {
       };
 
       const now = Date.now();
-      poster(`/api/${database.gameId}/timerUpdate`, timerUpdateData, now, 0);
+      poster(`/api/${database.gameId}/timerUpdate`, timerUpdateData, now, 0)
+        .catch(() => {});
     },
   };
 

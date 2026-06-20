@@ -27,6 +27,7 @@ export function useChangeOption() {
 
     databaseFns.update((storedGameData) => {
       storedGameData.options[option] = value;
+      storedGameData.sequenceNum = (storedGameData.sequenceNum ?? 0) + 1;
       if (storedGameData.timers) {
         storedGameData.timers.paused = false;
       }

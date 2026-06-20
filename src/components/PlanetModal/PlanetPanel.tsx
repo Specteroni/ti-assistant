@@ -1,6 +1,5 @@
-import { CSSProperties, use } from "react";
+import { CSSProperties } from "react";
 import { FormattedMessage } from "react-intl";
-import { SettingsContext } from "../../context/contexts";
 import {
   useAttachments,
   useLeader,
@@ -19,12 +18,9 @@ import { rem } from "../../util/util";
 import { CollapsibleSection } from "../CollapsibleSection";
 import FactionComponents from "../FactionComponents/FactionComponents";
 import { FactionSelectHoverMenu } from "../FactionSelect";
-import PlanetDiv from "../PlanetRow/PlanetDiv";
 import PlanetRow from "../PlanetRow/PlanetRow";
 import PlanetSummary from "../PlanetSummary/PlanetSummary";
 import styles from "./PlanetPanel.module.scss";
-
-export type PlanetPanelView = "CLASSIC" | "GRID";
 
 function PlanetSection({
   factionId,
@@ -39,9 +35,6 @@ function PlanetSection({
   const planets = usePlanets();
   const viewOnly = useViewOnly();
   const xxekirGrom = useLeader("Xxekir Grom");
-  const { settings } = use(SettingsContext);
-
-  const view = settings["planet-panel-view"];
 
   const ownedPlanets = filterToClaimedPlanets(planets, factionId);
 
@@ -82,37 +75,27 @@ function PlanetSection({
           hasXxchaHero={hasXxchaHero}
         />
       </div>
-      {view === "GRID" ? (
-        <div className={styles.planetListGrid}>
-          {updatedPlanets.map((planet) => {
-            return <PlanetDiv key={planet.id} planet={planet} />;
-          })}
-        </div>
-      ) : (
-        <div className={styles.planetList}>
-          {updatedPlanets.map((planet) => {
-            return (
-              <PlanetRow
-                key={planet.id}
-                planet={planet}
-                factionId={factionId}
-                removePlanet={
-                  viewOnly
-                    ? undefined
-                    : (planetId) => {
-                        dataUpdate(
-                          Events.UnclaimPlanetEvent(factionId, planetId),
-                        );
-                      }
-                }
-                opts={{
-                  hideAttachButton: viewOnly,
-                }}
-              />
-            );
-          })}
-        </div>
-      )}
+      <div className={styles.planetList}>
+        {updatedPlanets.map((planet) => {
+          return (
+            <PlanetRow
+              key={planet.id}
+              planet={planet}
+              factionId={factionId}
+              removePlanet={
+                viewOnly
+                  ? undefined
+                  : (planetId) => {
+                      dataUpdate(Events.UnclaimPlanetEvent(factionId, planetId));
+                    }
+              }
+              opts={{
+                hideAttachButton: viewOnly,
+              }}
+            />
+          );
+        })}
+      </div>
     </CollapsibleSection>
   );
 }

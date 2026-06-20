@@ -1,4 +1,13 @@
-import { getAgendaVotingOrder } from "../helpers";
+import { createIntl, createIntlCache } from "react-intl";
+import {
+  buildAgendas,
+  buildAttachments,
+  buildFactions,
+  buildLeaders,
+  buildPlanets,
+  buildTechs,
+} from "../../data/GameData";
+import { getEligibleAgendaVotingOrder } from "../agendaVoting";
 
 // Should only be used for non-component cards
 export class StartVotingHandler implements Handler {
@@ -9,9 +18,18 @@ export class StartVotingHandler implements Handler {
   }
 
   getUpdates(): Record<string, any> {
-    const firstVoter = getAgendaVotingOrder(
+    const cache = createIntlCache();
+    const intl = createIntl({ locale: "en" }, cache);
+    const firstVoter = getEligibleAgendaVotingOrder(
       this.gameData.state,
-      this.gameData.factions
+      buildFactions(this.gameData, intl),
+      buildPlanets(this.gameData, intl),
+      buildAttachments(this.gameData, intl),
+      buildAgendas(this.gameData, intl),
+      this.gameData.options,
+      this.gameData.actionLog ?? [],
+      buildLeaders(this.gameData, intl),
+      buildTechs(this.gameData, intl),
     )[0];
     const updates: Record<string, any> = {
       [`state.paused`]: false,

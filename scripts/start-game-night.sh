@@ -21,7 +21,7 @@ if [ -z "$LAN_IP" ]; then
 fi
 
 echo ""
-echo "TI Assistant local game-night server"
+echo "JoboTracker local game-night server"
 echo ""
 echo "This Mac:"
 echo "  http://127.0.0.1:${PORT}${START_PATH}"
@@ -47,7 +47,7 @@ echo ""
 
 if lsof -nP -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1; then
   echo "Port ${PORT} is already in use."
-  echo "That usually means TI Assistant is already running. Use the link above."
+  echo "That usually means JoboTracker is already running. Use the link above."
   echo ""
   echo "If the link does not load, close the other terminal window running the app,"
   echo "then start this command again."

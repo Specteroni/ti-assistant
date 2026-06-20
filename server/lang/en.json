@@ -93,7 +93,7 @@
   },
   "0pQtUL": {
     "defaultMessage": "Polish (pl) Translation: {name}",
-    "description": "Credit for the polish translation of TI Assistant."
+    "description": "Credit for the polish translation of JoboTracker."
   },
   "0rSMZW": {
     "defaultMessage": "Large",
@@ -137,7 +137,7 @@
   },
   "355TBA": {
     "defaultMessage": "Contributors",
-    "description": "Label for section listing out people that worked on TI Assistant."
+    "description": "Label for section listing out people that worked on JoboTracker."
   },
   "3Taw9H": {
     "defaultMessage": "Codex I",
@@ -4561,7 +4561,7 @@
   },
   "KeMh1j": {
     "defaultMessage": "Portuguese (pt-BR) Translation: {name}",
-    "description": "Credit for the portuguese (pt-BR) translation of TI Assistant."
+    "description": "Credit for the portuguese (pt-BR) translation of JoboTracker."
   },
   "KiioBO": {
     "defaultMessage": "Final Score",
@@ -4572,7 +4572,7 @@
     "description": "Text on a button that displays the attachment menu for a planet."
   },
   "KuClgv": {
-    "defaultMessage": "The goal of TI Assistant is to provide as much information as possible while requiring minimal manual input.{br}The following options require significant manual input and are not recommended for most groups.",
+    "defaultMessage": "The goal of JoboTracker is to provide as much information as possible while requiring minimal manual input.{br}The following options require significant manual input and are not recommended for most groups.",
     "description": "Disclaimer about advanced tracking options."
   },
   "KzTGw5": {
@@ -4705,7 +4705,7 @@
   },
   "LCVmZp": {
     "defaultMessage": "French (fr) Translation: {name}",
-    "description": "Credit for the french translation of TI Assistant."
+    "description": "Credit for the french translation of JoboTracker."
   },
   "LD7frS": {
     "defaultMessage": "Gather Starting Components",
@@ -10181,7 +10181,7 @@
   },
   "VZ+RJH": {
     "defaultMessage": "Programming: {name}",
-    "description": "Credit for helping to program TI Assistant."
+    "description": "Credit for helping to program JoboTracker."
   },
   "VjlCY0": {
     "defaultMessage": "Update",
@@ -10461,15 +10461,15 @@
   },
   "X3Nzbr": {
     "defaultMessage": "Patrons",
-    "description": "Label for section listing out people that regularly donate to TI Assistant."
+    "description": "Label for section listing out people that regularly donate to JoboTracker."
   },
   "X3VPhD": {
     "defaultMessage": "Extra",
     "description": "Header for column listing how many extra votes players have cast."
   },
   "X7zR7a": {
-    "defaultMessage": "Help support TI Assistant",
-    "description": "Label for a section about helping TI Assistant"
+    "defaultMessage": "Help support JoboTracker",
+    "description": "Label for a section about helping JoboTracker"
   },
   "XG4lKH": {
     "defaultMessage": "Return Tech",
@@ -10973,7 +10973,7 @@
   },
   "dENKlQ": {
     "defaultMessage": "Supporters",
-    "description": "Label for section listing out everyone that has donated to TI Assistant."
+    "description": "Label for section listing out everyone that has donated to JoboTracker."
   },
   "dNmJ1r": {
     "defaultMessage": "Unpause",
@@ -11141,11 +11141,11 @@
   },
   "kq4/fY": {
     "defaultMessage": "German (de) Translation: {name}",
-    "description": "Credit for the german translation of TI Assistant."
+    "description": "Credit for the german translation of JoboTracker."
   },
   "l02mfP": {
-    "defaultMessage": "TI Assistant keeps track of whose turn it is, how much time has elapsed, and all the other details so you can focus on playing the game.",
-    "description": "More info on the home page for TI Assistant."
+    "defaultMessage": "JoboTracker keeps track of whose turn it is, how much time has elapsed, and all the other details so you can focus on playing the game.",
+    "description": "More info on the home page for JoboTracker."
   },
   "l6pQCt": {
     "defaultMessage": "Swap {firstCard} for {secondCard}",
@@ -11169,7 +11169,7 @@
   },
   "m6nb4H": {
     "defaultMessage": "The best way to play Twilight Imperium",
-    "description": "Tag line on the home page for TI Assistant."
+    "description": "Tag line on the home page for JoboTracker."
   },
   "mYdPrP": {
     "defaultMessage": "Researched in {perc}% of games ({count} of {games})",

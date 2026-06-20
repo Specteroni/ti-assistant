@@ -121,7 +121,7 @@
   },
   "355TBA": {
     "defaultMessage": "Contributeurs",
-    "description": "Label for section listing out people that worked on TI Assistant."
+    "description": "Label for section listing out people that worked on JoboTracker."
   },
   "3Taw9H": {
     "defaultMessage": "Codex I",
@@ -5341,7 +5341,7 @@
   },
   "VZ+RJH": {
     "defaultMessage": "Programmation",
-    "description": "Credit for helping to program TI Assistant."
+    "description": "Credit for helping to program JoboTracker."
   },
   "VjlCY0": {
     "defaultMessage": "Mise à jour",
@@ -5589,15 +5589,15 @@
   },
   "X3Nzbr": {
     "defaultMessage": "Contributeurs",
-    "description": "Label for section listing out people that regularly donate to TI Assistant."
+    "description": "Label for section listing out people that regularly donate to JoboTracker."
   },
   "X3VPhD": {
     "defaultMessage": "votes supplémentaires",
     "description": "Header for column listing how many extra votes players have cast."
   },
   "X7zR7a": {
-    "defaultMessage": "Support d'aide TI Assistant",
-    "description": "Label for a section about helping TI Assistant"
+    "defaultMessage": "Support d'aide JoboTracker",
+    "description": "Label for a section about helping JoboTracker"
   },
   "XG4lKH": {
     "defaultMessage": "Rendre une technologie",
@@ -6049,7 +6049,7 @@
   },
   "dENKlQ": {
     "defaultMessage": "Contributeurs",
-    "description": "Label for section listing out everyone that has donated to TI Assistant."
+    "description": "Label for section listing out everyone that has donated to JoboTracker."
   },
   "dNmJ1r": {
     "defaultMessage": "Reprendre",
@@ -6193,7 +6193,7 @@
   },
   "kq4/fY": {
     "defaultMessage": "Traduction Française: Bibox",
-    "description": "Credit for the german translation of TI Assistant."
+    "description": "Credit for the german translation of JoboTracker."
   },
   "l6pQCt": {
     "defaultMessage": "Echanger {firstCard} avec {secondCard}",

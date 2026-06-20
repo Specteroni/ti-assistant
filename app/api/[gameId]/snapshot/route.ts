@@ -15,6 +15,7 @@ export async function GET(
   const { gameId } = await params;
   const url = new URL(req.url);
   const archive = url.searchParams.get("archive") === "1";
+  const maxLogEntries = Number(url.searchParams.get("maxLogEntries") ?? 0);
 
   const gamePath = archive ? "archive" : "games";
   const timerPath = archive ? "archiveTimers" : "timers";
@@ -23,6 +24,15 @@ export async function GET(
     getGameData(gameId, gamePath),
     getTimers(gameId, timerPath),
   ]);
+
+  if (
+    Number.isInteger(maxLogEntries) &&
+    maxLogEntries > 0 &&
+    gameData.actionLog &&
+    gameData.actionLog.length > maxLogEntries
+  ) {
+    gameData.actionLog = gameData.actionLog.slice(0, maxLogEntries);
+  }
 
   return NextResponse.json({ gameData, timers });
 }

@@ -10,7 +10,7 @@ export default function Supporters({ intl }: { intl: IntlShape }) {
       className="flexColumn"
       style={{ gap: rem(16), justifyContent: "flex-start" }}
     >
-      <NonGameHeader leftSidebar="TI ASSISTANT" rightSidebar="SUPPORTERS" />
+      <NonGameHeader leftSidebar="JOBOTRACKER" rightSidebar="SUPPORTERS" />
       <div
         className="flexColumn"
         style={{
@@ -27,7 +27,7 @@ export default function Supporters({ intl }: { intl: IntlShape }) {
             id: "355TBA",
             defaultMessage: "Contributors",
             description:
-              "Label for section listing out people that worked on TI Assistant.",
+              "Label for section listing out people that worked on JoboTracker.",
           })}
         >
           <div
@@ -43,7 +43,7 @@ export default function Supporters({ intl }: { intl: IntlShape }) {
                 {
                   id: "VZ+RJH",
                   defaultMessage: "Programming: {name}",
-                  description: "Credit for helping to program TI Assistant.",
+                  description: "Credit for helping to program JoboTracker.",
                 },
                 { name: "NoahPeres" },
               )}
@@ -54,7 +54,7 @@ export default function Supporters({ intl }: { intl: IntlShape }) {
                   id: "kq4/fY",
                   defaultMessage: "German (de) Translation: {name}",
                   description:
-                    "Credit for the german translation of TI Assistant.",
+                    "Credit for the german translation of JoboTracker.",
                 },
                 { name: "BuzZoiDk24" },
               )}
@@ -65,7 +65,7 @@ export default function Supporters({ intl }: { intl: IntlShape }) {
                   id: "LCVmZp",
                   defaultMessage: "French (fr) Translation: {name}",
                   description:
-                    "Credit for the french translation of TI Assistant.",
+                    "Credit for the french translation of JoboTracker.",
                 },
                 { name: "Bibox" },
               )}
@@ -76,7 +76,7 @@ export default function Supporters({ intl }: { intl: IntlShape }) {
                   id: "0pQtUL",
                   defaultMessage: "Polish (pl) Translation: {name}",
                   description:
-                    "Credit for the polish translation of TI Assistant.",
+                    "Credit for the polish translation of JoboTracker.",
                 },
                 { name: "Battis" },
               )}
@@ -87,7 +87,7 @@ export default function Supporters({ intl }: { intl: IntlShape }) {
                   id: "KeMh1j",
                   defaultMessage: "Portuguese (pt-BR) Translation: {name}",
                   description:
-                    "Credit for the portuguese (pt-BR) translation of TI Assistant.",
+                    "Credit for the portuguese (pt-BR) translation of JoboTracker.",
                 },
                 { name: "Luis Redigolo" },
               )}
@@ -99,7 +99,7 @@ export default function Supporters({ intl }: { intl: IntlShape }) {
             id: "X3Nzbr",
             defaultMessage: "Patrons",
             description:
-              "Label for section listing out people that regularly donate to TI Assistant.",
+              "Label for section listing out people that regularly donate to JoboTracker.",
           })}
           rightLabel={
             <a href={`https://patreon.com/TIAssistant`}>
@@ -156,7 +156,7 @@ export default function Supporters({ intl }: { intl: IntlShape }) {
             id: "dENKlQ",
             defaultMessage: "Supporters",
             description:
-              "Label for section listing out everyone that has donated to TI Assistant.",
+              "Label for section listing out everyone that has donated to JoboTracker.",
           })}
           rightLabel={
             <a href={`https://www.buymeacoffee.com/tiassistant`}>

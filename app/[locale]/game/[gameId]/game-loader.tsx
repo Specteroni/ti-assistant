@@ -5,12 +5,12 @@ import styles from "../../root.module.scss";
 export default function GameLoader({}) {
   return (
     <>
-      <Sidebars left="TI ASSISTANT" right="TI ASSISTANT" />
+      <Sidebars left="JOBOTRACKER" right="JOBOTRACKER" />
       <div className={styles.Loader}>
         <div className={styles.LoadingLogo}>
           <SiteLogo />
         </div>
-        TI Assistant
+        JoboTracker
       </div>
     </>
   );

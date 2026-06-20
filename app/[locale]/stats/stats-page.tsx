@@ -276,7 +276,7 @@ export default function StatsPage({ loading }: { loading?: boolean }) {
   return (
     <>
       <NonGameHeader
-        leftSidebar="TI ASSISTANT"
+        leftSidebar="JOBOTRACKER"
         rightSidebar={intl
           .formatMessage({
             id: "aO0PYJ",

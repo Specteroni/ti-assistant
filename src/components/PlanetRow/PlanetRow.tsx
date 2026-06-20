@@ -3,7 +3,7 @@ import { FormattedMessage } from "react-intl";
 import { ModalContext } from "../../context/contexts";
 import {
   useAttachments,
-  useCurrentTurn,
+  useActionLog,
   useLeader,
   useOptions,
   usePlanet,
@@ -21,6 +21,7 @@ import HitSVG from "../../icons/ui/Hit";
 import FlipSVG from "../../icons/ui/Flip";
 import { SelectableRow } from "../../SelectableRow";
 import { getFactionVotes } from "../../util/actionLog";
+import { getCurrentAgendaLogEntries } from "../../util/api/actionLog";
 import { useDataUpdate } from "../../util/api/dataUpdate";
 import { Events } from "../../util/api/events";
 import { applyPlanetAttachments, canExhaustPlanet } from "../../util/planets";
@@ -36,9 +37,11 @@ import ResourcesIcon from "../ResourcesIcon/ResourcesIcon";
 import Toggle from "../Toggle/Toggle";
 import UnitIcon from "../Units/Icons";
 import CommodityValueIcon from "../PlanetIcons/CommodityValueIcon";
+import styles from "./PlanetRow.module.scss";
 
 interface PlanetRowOpts {
   hideAttachButton?: boolean;
+  hideManagementControls?: boolean;
   showAttachButton?: boolean;
   showSelfOwned?: boolean;
 }
@@ -54,16 +57,17 @@ interface PlanetRowProps {
 }
 
 export function usePlanetExhaustion(planet: Planet) {
-  const currentTurn = useCurrentTurn();
+  const actionLog = useActionLog();
   const dataUpdate = useDataUpdate();
   const options = useOptions();
   const phase = usePhase();
   const xxekirGrom = useLeader("Xxekir Grom");
 
   const exhausted = planet.state === "EXHAUSTED";
+  const agendaLog = getCurrentAgendaLogEntries(actionLog);
   const factionVotes =
     phase === "AGENDA" && planet.owner
-      ? getFactionVotes(currentTurn, planet.owner)
+      ? getFactionVotes(agendaLog, planet.owner)
       : undefined;
   const canToggle =
     phase !== "AGENDA" ||
@@ -227,6 +231,9 @@ export default function PlanetRow({
   let claimedColor = previousOwner ? factionColors[previousOwner] : undefined;
 
   function showSpaceDockToggle() {
+    if (opts.hideManagementControls) {
+      return false;
+    }
     if (planet.attributes.includes("space-station")) {
       return false;
     }
@@ -240,7 +247,7 @@ export default function PlanetRow({
   }
 
   function showPlanetStateToggle() {
-    return canTogglePlanetExhaustion(planet);
+    return canToggleState && canTogglePlanetExhaustion(planet);
   }
 
   return (
@@ -248,6 +255,7 @@ export default function PlanetRow({
       itemId={planet.id}
       selectItem={planet.locked ? undefined : addPlanet}
       removeItem={planet.locked ? undefined : removePlanet}
+      removeLabel="X"
       viewOnly={viewOnly}
     >
       <div
@@ -330,21 +338,24 @@ export default function PlanetRow({
               width: rem(40),
             }}
           >
-            <Toggle
-              selected={!!planet.spaceDock}
-              toggleFn={(prevValue) =>
+            <button
+              className={`${styles.TouchIconButton} ${
+                planet.spaceDock ? styles.selected : ""
+              }`}
+              onClick={() =>
                 dataUpdate(
                   Events.ToggleStructureEvent(
                     planet.id,
                     "Space Dock",
-                    prevValue ? "Remove" : "Add",
+                    planet.spaceDock ? "Remove" : "Add",
                   ),
                 )
               }
               disabled={viewOnly}
+              title={planet.spaceDock ? "Remove space dock" : "Add space dock"}
             >
-              <UnitIcon type="Space Dock" size={14} />
-            </Toggle>
+              <UnitIcon type="Space Dock" size={20} />
+            </button>
           </div>
         ) : null}
         {showPlanetStateToggle() ? (
@@ -353,52 +364,47 @@ export default function PlanetRow({
               display: "flex",
               flexShrink: 0,
               justifyContent: "center",
-              width: rem(36),
+              width: rem(40),
             }}
           >
-            <Toggle
-              compact
-              selected={planetExhaustion.exhausted}
-              toggleFn={planetExhaustion.toggle}
+            <button
+              className={`${styles.TouchIconButton} ${
+                planetExhaustion.exhausted ? styles.selected : ""
+              }`}
+              onClick={planetExhaustion.toggle}
               disabled={
-                viewOnly || !canToggleState || !planetExhaustion.canToggle
+                viewOnly || !planetExhaustion.canToggle
+              }
+              title={
+                planetExhaustion.exhausted ? "Ready planet" : "Exhaust planet"
               }
             >
               <span
                 style={{
                   display: "flex",
-                  width: rem(10.5),
-                  height: rem(10.5),
+                  width: rem(18),
+                  height: rem(18),
                 }}
               >
                 <FlipSVG />
               </span>
-            </Toggle>
+            </button>
           </div>
         ) : null}
-        {!opts.showAttachButton ? (
+        {!opts.showAttachButton && !opts.hideManagementControls ? (
           <div
             className="flexRow"
             style={{
               flexShrink: 0,
               justifyContent: "center",
-              width: rem(24),
+              width: rem(40),
             }}
           >
             {canAttach() ? (
               <button
-                style={{
-                  fontSize: rem(16),
-                  width: rem(16),
-                  height: rem(16),
-                  padding: rem(2),
-                  borderRadius: "100%",
-                  display: "flex",
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-                className="hiddenButton"
+                className={`${styles.TouchIconButton} hiddenButton`}
                 onClick={() => openModal(<AttachMenu planetId={planet.id} />)}
+                title="Attach to planet"
               >
                 ⎗
               </button>

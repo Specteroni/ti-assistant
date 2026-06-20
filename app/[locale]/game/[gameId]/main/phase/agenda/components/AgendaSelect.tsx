@@ -5,27 +5,30 @@ import {
   useAgendas,
   useViewOnly,
 } from "../../../../../../../../src/context/dataHooks";
+import { useGameState } from "../../../../../../../../src/context/stateDataHooks";
 import { ClientOnlyHoverMenu } from "../../../../../../../../src/HoverMenu";
 import { getActiveAgenda } from "../../../../../../../../src/util/actionLog";
 import { getCurrentAgendaLogEntries } from "../../../../../../../../src/util/api/actionLog";
 import { useDataUpdate } from "../../../../../../../../src/util/api/dataUpdate";
 import { Events } from "../../../../../../../../src/util/api/events";
-import { Optional } from "../../../../../../../../src/util/types/types";
 import { rem } from "../../../../../../../../src/util/util";
 
-export default function AgendaSelect({ fontSize }: { fontSize?: string }) {
+export default function AgendaSelect({
+  activeAgenda,
+  fontSize,
+}: {
+  activeAgenda?: AgendaId;
+  fontSize?: string;
+}) {
   const actionLog = useActionLog();
   const agendas = useAgendas();
   const dataUpdate = useDataUpdate();
+  const state = useGameState();
   const viewOnly = useViewOnly();
 
-  let currentAgenda: Optional<Agenda>;
-  const currentAgendaLog = getCurrentAgendaLogEntries(actionLog);
-  const activeAgenda = getActiveAgenda(currentAgendaLog);
-
-  if (activeAgenda) {
-    currentAgenda = agendas[activeAgenda];
-  }
+  const fallbackAgenda = getActiveAgenda(getCurrentAgendaLogEntries(actionLog));
+  const currentAgendaId = activeAgenda ?? fallbackAgenda;
+  const currentAgenda = currentAgendaId ? agendas[currentAgendaId] : undefined;
 
   const orderedAgendas = Object.values(agendas).sort((a, b) => {
     if (a.name < b.name) {
@@ -38,8 +41,10 @@ export default function AgendaSelect({ fontSize }: { fontSize?: string }) {
     return (
       <AgendaRow
         agenda={currentAgenda}
-        removeAgenda={() =>
-          dataUpdate(Events.HideAgendaEvent(currentAgenda.id))
+        removeAgenda={
+          state.votingStarted
+            ? undefined
+            : () => dataUpdate(Events.HideAgendaEvent(currentAgenda.id))
         }
       />
     );
