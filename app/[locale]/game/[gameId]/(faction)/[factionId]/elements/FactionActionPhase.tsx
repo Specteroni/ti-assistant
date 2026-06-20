@@ -83,9 +83,16 @@ function SecondaryContextBanner({
   selectedAction: Action;
 }) {
   return (
-    <div className="flexColumn" style={secondaryContextStyle}>
-      <div style={secondaryContextEyebrowStyle}>Strategy Card Secondary</div>
-      <div style={secondaryContextTitleStyle}>{selectedAction}</div>
+    <div className="flexRow" style={secondaryContextStyle}>
+      <div style={secondaryContextLineStyle} />
+      <div className="flexRow" style={secondaryContextContentStyle}>
+        <div style={secondaryContextDotStyle} />
+        <div className="flexColumn" style={secondaryContextTextStyle}>
+          <div style={secondaryContextEyebrowStyle}>Resolving secondary</div>
+          <div style={secondaryContextTitleStyle}>{selectedAction}</div>
+        </div>
+      </div>
+      <div style={secondaryContextLineStyle} />
     </div>
   );
 }
@@ -151,23 +158,49 @@ function secondaryButtonStyle(disabled = false) {
 
 const secondaryContextStyle = {
   alignItems: "center",
-  backgroundColor: "var(--light-bg)",
-  border: "1px solid var(--neutral-border)",
-  borderRadius: rem(6),
+  gap: rem(8),
+  marginBlockEnd: rem(6),
+  width: "100%",
+};
+
+const secondaryContextLineStyle = {
+  backgroundColor: "var(--neutral-border)",
+  flex: 1,
+  height: rem(1),
+  minWidth: rem(24),
+  opacity: 0.7,
+};
+
+const secondaryContextContentStyle = {
+  alignItems: "center",
+  backgroundColor: "rgb(255 255 255 / 0.06)",
+  borderLeft: "3px solid var(--neutral-border)",
+  gap: rem(7),
+  padding: `${rem(3)} ${rem(10)}`,
+};
+
+const secondaryContextDotStyle = {
+  backgroundColor: "var(--neutral-border)",
+  borderRadius: "50%",
+  boxShadow: "0 0 0 3px rgb(255 255 255 / 0.08)",
+  height: rem(7),
+  width: rem(7),
+};
+
+const secondaryContextTextStyle = {
+  alignItems: "flex-start",
   gap: rem(1),
-  marginBlockEnd: rem(4),
-  padding: `${rem(4)} ${rem(12)}`,
-  textAlign: "center" as const,
 };
 
 const secondaryContextEyebrowStyle = {
   color: "var(--neutral-text)",
-  fontSize: rem(10),
+  fontSize: rem(9),
+  lineHeight: 1,
   textTransform: "uppercase" as const,
 };
 
 const secondaryContextTitleStyle = {
   color: "var(--foreground-color)",
-  fontSize: rem(16),
+  fontSize: rem(15),
   lineHeight: 1,
 };

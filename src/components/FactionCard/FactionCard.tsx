@@ -31,6 +31,7 @@ interface FactionCardOpts {
 interface FactionCardProps {
   factionId: FactionId;
   rightLabel?: ReactNode;
+  showInfo?: boolean;
   opts?: FactionCardOpts;
   style?: CSSProperties;
 }
@@ -39,6 +40,7 @@ export default function FancyFactionDiv({
   children,
   factionId,
   rightLabel,
+  showInfo = true,
   style = {},
   opts = {},
 }: PropsWithChildren<FactionCardProps>) {
@@ -60,7 +62,9 @@ export default function FancyFactionDiv({
         >
           <FactionIcon factionId={factionId} size={16} />
           <FactionComponents.Name factionId={factionId} />
-          <FactionPanel factionId={factionId} options={options} />
+          {showInfo ? (
+            <FactionPanel factionId={factionId} options={options} />
+          ) : null}
         </div>
       }
       rightLabel={rightLabel}

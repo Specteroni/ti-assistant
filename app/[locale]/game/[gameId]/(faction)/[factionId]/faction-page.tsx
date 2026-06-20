@@ -26,6 +26,7 @@ export default function FactionPage({ factionId }: { factionId: FactionId }) {
       <div style={{ width: "100%", margin: rem(4) }}>
         <FancyFactionDiv
           factionId={faction.id}
+          showInfo={false}
           style={{ width: "100%" }}
           rightLabel={
             <StaticFactionTimer

@@ -36,7 +36,7 @@ type TechReferenceFilter =
   | "MOVEMENT"
   | "PRODUCTION"
   | "STATUS"
-  | "PASSIVE";
+  | "UNIT";
 
 const TECH_FILTERS: {
   id: TechReferenceFilter;
@@ -74,11 +74,78 @@ const TECH_FILTERS: {
     title: "Technologies used during the status phase",
   },
   {
-    id: "PASSIVE",
-    label: "Always",
-    title: "Passive technologies and unit upgrades without a specific timing",
+    id: "UNIT",
+    label: "Unit",
+    title: "Unit upgrade technologies",
   },
 ];
+
+const TECH_TIMING_CATEGORIES: Partial<Record<TechId, TechReferenceFilter[]>> = {
+  "AI Development Algorithm": ["PRODUCTION"],
+  "Aerie Hololattice": ["MOVEMENT", "PRODUCTION"],
+  Aetherstream: ["MOVEMENT"],
+  "Agency Supply Network": ["PRODUCTION"],
+  "Antimass Deflectors": ["MOVEMENT"],
+  "Assault Cannon": ["COMBAT"],
+  "Bio-Stims": ["ACTION"],
+  Bioplasmosis: ["MOVEMENT"],
+  "Chaos Mapping": ["ACTION", "PRODUCTION"],
+  "Daxcive Animators": ["COMBAT"],
+  "Dark Energy Tap": ["MOVEMENT"],
+  "Dimensional Splicer": ["COMBAT"],
+  "Duranium Armor": ["COMBAT"],
+  "E-Res Siphons": ["ACTION"],
+  "Executive Order": ["ACTION", "AGENDA"],
+  "Fleet Logistics": ["ACTION"],
+  "Genetic Recombination": ["AGENDA"],
+  "Gravity Drive": ["MOVEMENT"],
+  "Graviton Laser System": ["COMBAT"],
+  "Hegemonic Trade Policy": ["AGENDA"],
+  "Hydrothermal Mining": ["STATUS"],
+  "Hyper Metabolism": ["STATUS"],
+  "Inheritance Systems": ["ACTION"],
+  "Instinct Training": ["ACTION"],
+  "Integrated Economy": ["PRODUCTION"],
+  "L4 Disruptors": ["COMBAT"],
+  "Lazax Gate Folding": ["MOVEMENT", "PRODUCTION"],
+  "LightWave Deflector": ["MOVEMENT"],
+  "Magen Defense Grid": ["COMBAT"],
+  "Mageon Implants": ["ACTION"],
+  "Magmus Reactor": ["MOVEMENT"],
+  "Mirror Computing": ["ACTION"],
+  Nanomachines: ["ACTION"],
+  "Neural Motivator": ["STATUS"],
+  "Neural Parasite": ["STATUS"],
+  "Neural Parasite (Obsidian)": ["ACTION", "COMBAT"],
+  Neuroglaive: ["COMBAT"],
+  "Non-Euclidean Shielding": ["COMBAT"],
+  "Nullification Field": ["ACTION"],
+  "Planesplitter (Obsidian)": ["ACTION", "MOVEMENT"],
+  "Plasma Scoring": ["COMBAT"],
+  "Predictive Intelligence": ["AGENDA"],
+  "Pre-Fab Arcologies": ["ACTION"],
+  "Production Biomes": ["ACTION"],
+  "Proxima Targeting VI": ["COMBAT"],
+  Psychoarchaeology: ["ACTION"],
+  "Quantum Datahub Node": ["ACTION"],
+  "Radical Advancement": ["STATUS"],
+  "Salvage Operations": ["COMBAT"],
+  "Sarween Tools": ["PRODUCTION"],
+  "Scanlink Drone Network": ["ACTION"],
+  "Self Assembly Routines": ["PRODUCTION"],
+  "Sling Relay": ["ACTION", "PRODUCTION"],
+  "Spacial Conduit Cylinder": ["ACTION", "MOVEMENT"],
+  "Subatomic Splicer": ["COMBAT", "PRODUCTION"],
+  Supercharge: ["COMBAT"],
+  "Temporal Command Suite": ["ACTION"],
+  "Transit Diodes": ["ACTION"],
+  "Valkyrie Particle Weave": ["COMBAT"],
+  Voidwatch: ["ACTION", "COMBAT"],
+  Vortex: ["ACTION"],
+  "Wormhole Generator": ["ACTION", "MOVEMENT"],
+  "X-89 Bacterial Weapon": ["COMBAT"],
+  "Yin Spinner": ["PRODUCTION"],
+};
 
 type TechTypeReferenceFilter = Exclude<TechType, "OTHER">;
 
@@ -602,85 +669,11 @@ function getTechTypeLabel(type: TechTypeReferenceFilter) {
 }
 
 function getTechTimingFilters(tech: Tech): TechReferenceFilter[] {
-  const text = [
-    tech.name,
-    tech.description,
-    tech.type === "UPGRADE" ? tech.abilities.join(" ") : "",
-  ]
-    .join(" ")
-    .toLowerCase();
-  const filters: TechReferenceFilter[] = [];
-
-  if (matchesAny(text, ["agenda", "vote", "voting", "elect"])) {
-    filters.push("AGENDA");
-  }
-  if (matchesAny(text, ["status phase", "during the status", "status step"])) {
-    filters.push("STATUS");
-  }
-  if (
-    matchesAny(text, [
-      "move",
-      "movement",
-      "moving",
-      "activate a system",
-      "activated system",
-      "wormhole",
-      "system that contains",
-      "through systems",
-    ])
-  ) {
-    filters.push("MOVEMENT");
-  }
-  if (
-    matchesAny(text, [
-      "combat",
-      "space combat",
-      "invasion",
-      "bombardment",
-      "anti-fighter barrage",
-      "space cannon",
-      "sustain damage",
-      "hit",
-      "roll",
-    ])
-  ) {
-    filters.push("COMBAT");
-  }
-  if (
-    matchesAny(text, [
-      "produce",
-      "production",
-      "place",
-      "unit",
-      "units",
-      "fighter",
-      "infantry",
-      "space dock",
-    ])
-  ) {
-    filters.push("PRODUCTION");
-  }
-  if (
-    matchesAny(text, [
-      "action:",
-      "component action",
-      "tactical action",
-      "strategy action",
-      "action phase",
-      "as an action",
-      "when you perform",
-      "when you resolve",
-      "after you activate",
-    ])
-  ) {
-    filters.push("ACTION");
+  if (tech.type === "UPGRADE") {
+    return ["UNIT"];
   }
 
-  return filters.length > 0 ? [...new Set(filters)] : ["PASSIVE"];
-}
-
-function matchesAny(text: string, needles: string[]) {
-  return needles.some((needle) => text.includes(needle));
+  return TECH_TIMING_CATEGORIES[tech.id] ?? [];
 }
 
 function getResearchedTechs(
